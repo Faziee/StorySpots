@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-android")
     id("com.google.relay") version "0.3.12"
-    id("com.google.gms.google-services") version "4.4.2"
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 android {
@@ -67,8 +67,4 @@ dependencies {
     // See https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-
-    //MapBox dependency
-    implementation("com.mapbox.maps:android:11.11.0")
-    implementation("com.mapbox.extension:maps-compose:11.11.0")
 }
