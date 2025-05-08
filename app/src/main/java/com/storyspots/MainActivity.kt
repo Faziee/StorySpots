@@ -1,47 +1,58 @@
 package com.storyspots
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.storyspots.ui.theme.StorySpotsTheme
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.mapbox.geojson.Point
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.style.MapStyle
 
-class MainActivity : ComponentActivity() {
+public class MainActivity : ComponentActivity() {
+    private val TAG = "MainActivity"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        FirebaseApp.initializeApp(this)
+
+        testFirestoreConnection()
+
         setContent {
-            StorySpotsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            MapboxMap(
+                modifier = Modifier.fillMaxSize(),
+                style = { MapStyle(style = "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") }
+            )
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun testFirestoreConnection() {
+        try {
+            Log.d(TAG, "Attempting to initialize Firebase Firestore")
+            val db = FirebaseFirestore.getInstance()
+            Log.d(TAG, "Firestore instance obtained successfully")
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    StorySpotsTheme {
-        Greeting("Android")
+            val testData = hashMapOf(
+                "timestamp" to System.currentTimeMillis(),
+                "message" to "Firebase connection test"
+            )
+
+            Log.d(TAG, "Attempting to write test data to Firestore")
+            db.collection("connection_tests")
+                .add(testData)
+                .addOnSuccessListener { documentReference ->
+                    Log.d(TAG, "Firebase connection successful! Document ID: ${documentReference.id}")
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Firebase connection failed", e)
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing Firebase", e)
+        }
     }
 }
