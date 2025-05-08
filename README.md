@@ -10,10 +10,10 @@ How to install it and its purpose.
 ## **Authors**
 
 - [@Jordana-GC](https://github.com/Jordana-GC)
-- [@Blossom](https://github.com/BlossomAnukposi)
-- [@Josephine](https://github.com/XxJosephineStensgaardxX)
-- [@Fajar](https://github.com/Faziee)
-- [@Sara](https://github.com/SaraBubanova)
+- [@Blossom](https://github.com/Jordana-GC)
+- [@Josephine](https://github.com/Jordana-GC)
+- [@Fajar](https://github.com/Jordana-GC)
+- [@Sara](https://github.com/Jordana-GC)
 
 
 
