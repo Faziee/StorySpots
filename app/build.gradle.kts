@@ -71,4 +71,5 @@ dependencies {
     //MapBox dependency
     implementation("com.mapbox.maps:android:11.11.0")
     implementation("com.mapbox.extension:maps-compose:11.11.0")
+    implementation ("com.mapbox.maps:plugin-annotation:10.14.0")
 }
