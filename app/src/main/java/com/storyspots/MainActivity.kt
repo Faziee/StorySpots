@@ -21,7 +21,10 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.extension.compose.MapEffect
 import androidx.compose.ui.viewinterop.AndroidView
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.plugin.animation.camera
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -91,12 +94,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun enableLocationComponent(mapView: com.mapbox.maps.MapView) {
+    private fun enableLocationComponent(mapView: MapView) {
+        val location = mapView.location
 
-        val locationComponentPlugin = mapView.location
-
-        locationComponentPlugin.updateSettings {
+        location.updateSettings {
             enabled = true
+
+            puckBearingEnabled = true
+            locationPuck = LocationPuck2D()
             pulsingEnabled = true
             pulsingColor = android.graphics.Color.BLUE
             pulsingMaxRadius = 40f
@@ -105,13 +110,19 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             accuracyRingBorderColor = android.graphics.Color.parseColor("#80ffffff")
         }
 
-        locationComponentPlugin.locationPuck = LocationPuck2D(
-            bearingImage = null,  // You can add a custom bearing image
-            shadowImage = null,   // You can add a custom shadow
-            scaleExpression = null
-        )
+        // Auto-center when location updates
+        location.addOnIndicatorPositionChangedListener { point ->
+            centerMapOnUserLocation(mapView, point)
+        }
+    }
 
-        locationComponentPlugin.enabled = true
+    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
+        mapView.camera.easeTo(
+            CameraOptions.Builder()
+                .center(point)
+                .zoom(15.0) 
+                .build()
+        )
     }
 
     private fun testFirestoreConnection() {
