@@ -1,37 +1,32 @@
 package com.storyspots
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Bitmap.createBitmap
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
-import com.mapbox.maps.extension.compose.MapboxMap
-import com.mapbox.maps.extension.compose.style.MapStyle
-import com.mapbox.maps.plugin.LocationPuck2D
-import com.mapbox.maps.plugin.locationcomponent.location
-import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.extension.compose.MapEffect
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
+import com.mapbox.maps.MapboxExperimental
+import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
+import com.mapbox.maps.plugin.gestures.gestures
+import com.mapbox.maps.plugin.locationcomponent.location
+
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -40,6 +35,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private lateinit var permissionsManager: PermissionsManager
 
     private val locationPermissionGranted = mutableStateOf(false)
+
+    private var pointAnnotationManager: PointAnnotationManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,11 +57,32 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
                     MapView(context).apply {
-                        getMapboxMap().loadStyleUri(
-                            "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
-                        ) {
+                        mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                        ) {style ->
                             if (locationPermissionGranted.value) {
                                 enableLocationComponent(this)
+                            }
+
+                            //have to explicitly call gestures to be allowed
+                            val gesturesPlugin = this.gestures
+                            gesturesPlugin.updateSettings {
+                                scrollEnabled = true
+                                quickZoomEnabled = true
+                                rotateEnabled = true
+                                pitchEnabled = true
+                            }
+
+                            //annotation manager
+                            val annotationApi = annotations
+                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
+
+
+                            mapboxMap.addOnMapClickListener {point ->
+
+                                //Code for adding caption and image goes here
+                                addPin(point)
+
+                                true
                             }
                         }
                     }
@@ -73,6 +91,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
+    @Deprecated("Test")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -101,18 +120,18 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun enableLocationComponent(mapView: com.mapbox.maps.MapView) {
+    private fun enableLocationComponent(mapView: MapView) {
 
         val locationComponentPlugin = mapView.location
 
         locationComponentPlugin.updateSettings {
             enabled = true
             pulsingEnabled = true
-            pulsingColor = android.graphics.Color.BLUE
+            pulsingColor = Color.BLUE
             pulsingMaxRadius = 40f
             showAccuracyRing = true
-            accuracyRingColor = android.graphics.Color.parseColor("#4d89cff0")
-            accuracyRingBorderColor = android.graphics.Color.parseColor("#80ffffff")
+            accuracyRingColor = Color.parseColor("#4d89cff0")
+            accuracyRingBorderColor = Color.parseColor("#80ffffff")
         }
 
         locationComponentPlugin.locationPuck = LocationPuck2D(
@@ -148,40 +167,13 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-//    @Composable
-//    fun MapViewScreen(context: Context){
-//        AndroidView(factory = {
-//            val mapView = MapView(context).apply {
-//                getMapboxMap().loadStyleUri("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"){
-//                    val annotationManager = annotations.createPointAnnotationManager()
-//
-//                    getMapboxMap().addOnMapClickListener { point ->
-//                        val bitmap = getBitmapFromDrawable(context, R.drawable.pin_marker)
-//
-//                        if(bitmap != null){
-//                            val annotation = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
-//                            annotationManager.deleteAll()
-//                            annotationManager.create(annotation)
-//                        }
-//
-//                        true
-//                    }
-//                }
-//            }
-//            mapView
-//        })
-//    }
+    private fun addPin(point: Point){
+        val context = this
+        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
 
-//    fun getBitmapFromDrawable(context: Context, resourceID: Int): Bitmap?{
-//        val drawable = ContextCompat.getDrawable(context, resourceID) ?: return null
-//
-//        if (drawable is BitmapDrawable) return drawable.bitmap
-//        val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
-//        val canvas = android.graphics.Canvas(bitmap)
-//
-//        drawable.setBounds(0, 0, canvas.width, canvas.height)
-//        drawable.draw(canvas)
-//
-//        return bitmap
-//    }
+        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+
+        pointAnnotationManager?.create(annotationOptions)
+    }
+
 }

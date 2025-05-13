@@ -6,7 +6,7 @@ plugins {
 }
 
 allprojects {
-    repositories {
+  //  repositories {
 //        google()
 //        mavenCentral()
 //        maven {
@@ -16,5 +16,5 @@ allprojects {
 //                password = "pk.eyJ1Ijoiam9zZXBoaW5lLXN0ZW5zZ2FhcmQiLCJhIjoiY21hY2NreWJ6MDFxMjJrcjA1YzNxa3FibCJ9.VQN_COHNfdKWyJ3sN1SwMQ"
 //            }
 //        }
-    }
+//    }
 }
