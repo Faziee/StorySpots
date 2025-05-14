@@ -52,7 +52,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material:1.4.3")
+    implementation(libs.androidx.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,8 +68,10 @@ dependencies {
     // See https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.firestore.ktx)
 
     //MapBox dependency
-    implementation("com.mapbox.maps:android:11.11.0")
-    implementation("com.mapbox.extension:maps-compose:11.11.0")
+    implementation(libs.android)
+    implementation(libs.maps.compose)
 }
