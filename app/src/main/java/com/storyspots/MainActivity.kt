@@ -8,8 +8,15 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,7 +33,7 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
-
+import com.storyspots.ui.theme.NotificationFeedScreen;
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -53,41 +60,61 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
 
         setContent {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    MapView(context).apply {
-                        mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
-                        ) {style ->
-                            if (locationPermissionGranted.value) {
-                                enableLocationComponent(this)
-                            }
 
-                            //have to explicitly call gestures to be allowed
-                            val gesturesPlugin = this.gestures
-                            gesturesPlugin.updateSettings {
-                                scrollEnabled = true
-                                quickZoomEnabled = true
-                                rotateEnabled = true
-                                pitchEnabled = true
-                            }
+            Box(modifier = Modifier.fillMaxSize())
+            {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        MapView(context).apply {
+                            mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                            ) {style ->
+                                if (locationPermissionGranted.value) {
+                                    enableLocationComponent(this)
+                                }
 
-                            //annotation manager
-                            val annotationApi = annotations
-                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
+                                //have to explicitly call gestures to be allowed
+                                val gesturesPlugin = this.gestures
+                                gesturesPlugin.updateSettings {
+                                    scrollEnabled = true
+                                    quickZoomEnabled = true
+                                    rotateEnabled = true
+                                    pitchEnabled = true
+                                }
+
+                                //annotation manager
+                                val annotationApi = annotations
+                                pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
 
-                            mapboxMap.addOnMapClickListener {point ->
+                                mapboxMap.addOnMapClickListener {point ->
 
-                                //Code for adding caption and image goes here
-                                addPin(point)
+                                    //Code for adding caption and image goes here
+                                    addPin(point)
 
-                                true
+                                    true
+                                }
                             }
                         }
                     }
+                )
+
+                // NOTE: this will be replaced by the navbar button later
+                val showFeed = remember { mutableStateOf(false)}
+
+                Button(
+                    onClick = { showFeed.value = !showFeed.value },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Text(if (showFeed.value) "Back to Map" else "Open Feed")
                 }
-            )
+
+                if (showFeed.value) {
+                    NotificationFeedScreen()
+                }
+            }
         }
     }
 

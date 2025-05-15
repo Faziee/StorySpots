@@ -74,4 +74,7 @@ dependencies {
     //MapBox dependency
     implementation(libs.android)
     implementation(libs.maps.compose)
+
+    //Coil Dependency
+    implementation("io.coil-kt:coil-compose:2.2.2")
 }
