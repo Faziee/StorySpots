@@ -40,12 +40,8 @@ fun NotificationFeedScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Notifications") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+                title = { Text("") },
+
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = White
                 )
@@ -60,7 +56,7 @@ fun NotificationFeedScreen(
                 .background(Background),
             contentAlignment = Alignment.TopCenter
         ) {
-            // Loading indicator
+
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),

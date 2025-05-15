@@ -73,7 +73,6 @@ class NotificationsViewModel : ViewModel() {
         }
     }
 
-    // Handle notification viewed
     fun markAsViewed(notificationId: String) {
         // TODO: Implement marking notification as viewed in Firestore
         // For now, just reload the notifications
