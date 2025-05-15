@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
@@ -33,17 +34,17 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.storyspots.ui.theme.NotificationFeedScreen;
+import com.storyspots.ui.theme.NotificationFeedScreen
+import com.storyspots.ui.theme.StorySpotsTheme
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
 
     private val TAG = "MainActivity"
     private lateinit var permissionsManager: PermissionsManager
-
     private val locationPermissionGranted = mutableStateOf(false)
-
     private var pointAnnotationManager: PointAnnotationManager? = null
+    private var contentInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,18 +52,35 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         FirebaseApp.initializeApp(this)
         testFirestoreConnection()
 
+        //checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
             locationPermissionGranted.value = true
+            initializeContent()
         } else {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
         }
+    }
+
+    private fun initializeContent() {
+        contentInitialized = true
 
         setContent {
+            MapScreen()
+        }
+    }
 
-            Box(modifier = Modifier.fillMaxSize())
-            {
+    @Composable
+    fun PermissionRequestScreen() {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Requesting location permissions...")
+        }
+    }
+
+    @Composable
+    fun MapScreen() {
+            Box(modifier = Modifier.fillMaxSize()) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->
@@ -116,7 +134,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 }
             }
         }
-    }
 
     @Deprecated("Test")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -133,9 +150,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
             // Update the state to enable location on the map
             enableLocationOnMap()
+            initializeContent()
         } else {
             Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
             locationPermissionGranted.value = false
+            initializeContent()
         }
     }
 
@@ -202,5 +221,4 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         pointAnnotationManager?.create(annotationOptions)
     }
-
 }
