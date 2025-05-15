@@ -1,5 +1,6 @@
 package com.storyspots
 
+import NotificationFeedScreen
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
@@ -35,8 +36,7 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.storyspots.ui.theme.NotificationFeedScreen
-import com.storyspots.ui.theme.StorySpotsTheme
+
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
