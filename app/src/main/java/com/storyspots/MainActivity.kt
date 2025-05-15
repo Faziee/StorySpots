@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mapbox.android.core.permissions.PermissionsListener
@@ -123,8 +124,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 Button(
                     onClick = { showFeed.value = !showFeed.value },
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.BottomEnd)
                         .padding(16.dp)
+                        .zIndex(1f)
                 ) {
                     Text(if (showFeed.value) "Back to Map" else "Open Feed")
                 }
