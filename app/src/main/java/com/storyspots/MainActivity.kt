@@ -19,7 +19,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
+import com.mapbox.maps.plugin.PuckBearing
+import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 
 
 @OptIn(MapboxExperimental::class)
@@ -27,8 +31,16 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private val TAG = "MainActivity"
     private lateinit var permissionsManager: PermissionsManager
-
     private val locationPermissionGranted = mutableStateOf(false)
+    private lateinit var mapView: MapView
+
+    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
+        centerMapOnUserLocation(mapView, point)
+    }
+
+    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
+        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +60,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
-                    MapView(context).apply {
+                    MapView(context).also { mapView = it}.apply {
                         getMapboxMap().loadStyleUri(
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
@@ -84,6 +96,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         if (granted) {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
+            mapView.getMapboxMap().getStyle( { style ->
+                enableLocationComponent(mapView)})
         } else {
             Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
             locationPermissionGranted.value = false
@@ -105,29 +119,45 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         mapView.location.updateSettings {
             enabled = true
             puckBearingEnabled = true
+            puckBearing = PuckBearing.COURSE
             locationPuck = LocationPuck2D()
+
             pulsingEnabled = true
-            pulsingColor = android.graphics.Color.BLUE
-            pulsingMaxRadius = 40f
+            pulsingColor = android.graphics.Color.parseColor("#4D89CFF0")
             showAccuracyRing = true
-            accuracyRingColor = android.graphics.Color.parseColor("#4d89cff0")
-            accuracyRingBorderColor = android.graphics.Color.parseColor("#80ffffff")
         }
-
-        mapView.safeCenterOnLocation()
-
+        
         mapView.location.addOnIndicatorPositionChangedListener { point ->
-            centerMapOnUserLocation(mapView, point)
+            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
+                mapView.camera.easeTo(
+                    CameraOptions.Builder()
+                        .center(point)
+                        .zoom(15.0)
+                        .build(),
+                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
+                )
+            }
         }
     }
 
     private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
+
         mapView.camera.easeTo(
             CameraOptions.Builder()
                 .center(point)
-                .zoom(15.0) 
-                .build()
+                .zoom(15.0)
+                .build(),
+            MapAnimationOptions.mapAnimationOptions {
+                duration(1000)
+            }
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+        mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
     }
 
     private fun testFirestoreConnection() {

@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material:1.4.3")
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,7 +70,10 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
 
-    //MapBox dependency
+    //MapBox
     implementation("com.mapbox.maps:android:11.11.0")
     implementation("com.mapbox.extension:maps-compose:11.11.0")
+
+    //Location
+    implementation ("com.google.android.gms:play-services-location:21.1.0")
 }
