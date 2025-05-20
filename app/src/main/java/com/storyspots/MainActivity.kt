@@ -27,7 +27,6 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.MapboxExperimental
 import androidx.compose.ui.viewinterop.AndroidView
-import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.PuckBearing
