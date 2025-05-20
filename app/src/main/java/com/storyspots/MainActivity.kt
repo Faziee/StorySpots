@@ -1,5 +1,7 @@
 package com.storyspots
 
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -8,11 +10,20 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
+import com.mapbox.geojson.Point
 import com.mapbox.maps.plugin.LocationPuck2D
+import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
+import com.mapbox.maps.plugin.gestures.addOnMapClickListener
+import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.MapboxExperimental
 import androidx.compose.ui.viewinterop.AndroidView
@@ -42,11 +53,18 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
     }
 
+    private var pointAnnotationManager: PointAnnotationManager? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         FirebaseApp.initializeApp(this)
-        testFirestoreConnection()
+        FirebaseFirestore.getInstance().firestoreSettings =
+            FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build()
+
+//        testFirestoreConnection()
 
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
@@ -67,6 +85,28 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             if (locationPermissionGranted.value) {
                                 enableLocationComponent(this)
                             }
+
+                            //have to explicitly call gestures to be allowed
+                            val gesturesPlugin = this.gestures
+                            gesturesPlugin.updateSettings {
+                                scrollEnabled = true
+                                quickZoomEnabled = true
+                                rotateEnabled = true
+                                pitchEnabled = true
+                            }
+
+                            //annotation manager
+                            val annotationApi = annotations
+                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
+
+
+                            mapboxMap.addOnMapClickListener {point ->
+
+                                //Code for adding caption and image goes here
+                                addPin(point)
+
+                                true
+                            }
                         }
                     }
                 }
@@ -74,11 +114,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -123,8 +159,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             locationPuck = LocationPuck2D()
 
             pulsingEnabled = true
-            pulsingColor = android.graphics.Color.parseColor("#4D89CFF0")
+            pulsingColor = Color.BLUE
+            pulsingMaxRadius = 40f
             showAccuracyRing = true
+            accuracyRingColor = Color.parseColor("#4d89cff0")
+            accuracyRingBorderColor = Color.parseColor("#80ffffff")
         }
         
         mapView.location.addOnIndicatorPositionChangedListener { point ->
@@ -183,4 +222,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             Log.e(TAG, "Error initializing Firebase", e)
         }
     }
+
+    private fun addPin(point: Point){
+        val context = this
+        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+
+        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+
+        pointAnnotationManager?.create(annotationOptions)
+    }
+
 }
