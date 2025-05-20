@@ -22,16 +22,18 @@ import com.storyspots.ui.theme.White
 import com.storyspots.notificationFeed.NotificationSection
 import com.storyspots.notificationFeed.NotificationsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.storyspots.notificationFeed.NotificationsViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun NotificationFeedScreen(
-    viewModel: NotificationsViewModel = viewModel(),
     onBackClick: () -> Unit = {},
     onViewClick: (NotificationItem) -> Unit = {}
 ) {
-    // Collect state from ViewModel
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val viewModel: NotificationsViewModel = viewModel(factory = NotificationsViewModelFactory(currentUserId))
     val newNotifications by viewModel.newNotifications.collectAsState()
     val lastWeekNotifications by viewModel.lastWeekNotifications.collectAsState()
     val lastMonthNotifications by viewModel.lastMonthNotifications.collectAsState()

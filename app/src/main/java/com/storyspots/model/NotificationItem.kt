@@ -1,12 +1,16 @@
 package com.storyspots.model
 
 import com.google.firebase.Timestamp
+import java.util.Date
 
 data class NotificationItem(
-    val id: String = "",
-    val userName: String,
-    val message: String,
-    val imageUrl: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val id: String,
+    val createdAt: Date,
+    val from: String,
+    val read: Boolean,
+    val story: String,
+    val to: String,
+    val imageUrl: String? = null,
+    val message: String? = null
 )
 

@@ -15,12 +15,12 @@ object NotificationUtils {
         val sevenDaysAgo = currentTime - TimeUnit.DAYS.toMillis(7)
         val thirtyDaysAgo = currentTime - TimeUnit.DAYS.toMillis(30)
 
-        val newNotifications = notifications.filter { it.timestamp > oneDayAgo }
+        val newNotifications = notifications.filter { it.createdAt.time > oneDayAgo }
         val lastWeekNotifications = notifications.filter {
-            it.timestamp <= oneDayAgo && it.timestamp > sevenDaysAgo
+            it.createdAt.time <= oneDayAgo && it.createdAt.time > sevenDaysAgo
         }
         val lastMonthNotifications = notifications.filter {
-            it.timestamp <= sevenDaysAgo && it.timestamp > thirtyDaysAgo
+            it.createdAt.time <= sevenDaysAgo && it.createdAt.time > thirtyDaysAgo
         }
 
         return Triple(newNotifications, lastWeekNotifications, lastMonthNotifications)

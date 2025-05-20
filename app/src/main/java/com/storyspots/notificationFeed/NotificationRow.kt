@@ -36,7 +36,7 @@ fun NotificationRow(
         // Profile Image
         Image(
             painter = rememberAsyncImagePainter(item.imageUrl),
-            contentDescription = "${item.userName}'s profile picture",
+            contentDescription = "${item.from}'s profile picture",
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape),
@@ -50,14 +50,14 @@ fun NotificationRow(
                 .padding(horizontal = 12.dp)
         ) {
             Text(
-                text = item.userName,
+                text = item.from,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkText
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = item.message,
+                text = item.from,
                 fontSize = 14.sp,
                 color = LightText
             )

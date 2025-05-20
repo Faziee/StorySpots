@@ -2,15 +2,18 @@ package com.storyspots.notificationFeed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.storyspots.model.NotificationItem
-import com.storyspots.testSample.SampleNotificationData
 import com.storyspots.notificationFeed.NotificationUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.Date
 
-class NotificationsViewModel : ViewModel() {
+class NotificationsViewModel(private val currentUserId: String) : ViewModel() {
     // State holders for different notification categories
     private val _newNotifications = MutableStateFlow<List<NotificationItem>>(emptyList())
     val newNotifications: StateFlow<List<NotificationItem>> = _newNotifications.asStateFlow()
@@ -26,46 +29,56 @@ class NotificationsViewModel : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        loadNotifications()
+        fetchNotificationsFromFirestore()
     }
 
-    fun loadNotifications() {
-        viewModelScope.launch {
-            _isLoading.value = true
-
-            try {
-                // In a real app, you would fetch from Firestore here
-                val allNotifications = SampleNotificationData.allNotifications
-
-                // Categorize notifications
-                val (new, lastWeek, lastMonth) = NotificationUtils.categorizeNotifications(allNotifications)
-
-                // Update state
-                _newNotifications.value = new
-                _lastWeekNotifications.value = lastWeek
-                _lastMonthNotifications.value = lastMonth
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    // This will be used when integrating with Firestore
     fun fetchNotificationsFromFirestore() {
         viewModelScope.launch {
             _isLoading.value = true
 
             try {
-                // TODO: Implement Firestore fetching
-                // Example pseudocode:
-                // val notificationsRef = FirebaseFirestore.getInstance().collection("notifications")
-                // val query = notificationsRef.whereEqualTo("userId", currentUserId)
-                // val notifications = query.get().await().toObjects(NotificationItem::class.java)
+                val db = FirebaseFirestore.getInstance()
+                val notificationsRef = db.collection("notification")
 
-                // For now, use sample data
-                loadNotifications()
+
+                val querySnapshot = notificationsRef
+                    .whereEqualTo("to", currentUserId)
+                    .orderBy("created_at", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                // Map Firestore documents to NotificationItem
+                val notifications = querySnapshot.documents.mapNotNull { doc ->
+                    try {
+                        val fromUserId = doc.getString("from") ?: return@mapNotNull null
+                        val userDoc = db.collection("user").document(fromUserId.split("/").last()).get().await()
+                        val userName = userDoc.getString("username") ?: "Unknown User"
+                        val imageUrl = userDoc.getString("profileImageUrl") ?: "" // Adjust field name as per your DB
+                        val storyId = doc.getString("story")?.split("/")?.last() ?: "a story"
+                        val message = "$userName mentioned you in $storyId"
+
+                        NotificationItem(
+                            id = doc.id,
+                            createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date(),
+                            from = doc.getString("from") ?: "",
+                            read = doc.getBoolean("read") ?: false,
+                            story = doc.getString("story") ?: "",
+                            to = doc.getString("to") ?: ""
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+
+                // Categorize notifications
+                val (new, lastWeek, lastMonth) = NotificationUtils.categorizeNotifications(notifications)
+
+                // Update state
+                _newNotifications.value = new
+                _lastWeekNotifications.value = lastWeek
+                _lastMonthNotifications.value = lastMonth
             } catch (e: Exception) {
-                // Handle error
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -74,8 +87,17 @@ class NotificationsViewModel : ViewModel() {
     }
 
     fun markAsViewed(notificationId: String) {
-        // TODO: Implement marking notification as viewed in Firestore
-        // For now, just reload the notifications
-        loadNotifications()
+        viewModelScope.launch {
+            try {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("notification")
+                    .document(notificationId)
+                    .update("read", true)
+                    .await()
+                fetchNotificationsFromFirestore()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
