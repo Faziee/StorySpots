@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.geojson.Point
@@ -42,7 +43,12 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         super.onCreate(savedInstanceState)
 
         FirebaseApp.initializeApp(this)
-        testFirestoreConnection()
+        FirebaseFirestore.getInstance().firestoreSettings =
+            FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build()
+
+//        testFirestoreConnection()
 
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
