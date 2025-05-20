@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.location)
     implementation(libs.androidx.material)
     implementation(libs.coil.compose)
     implementation (libs.kotlinx.coroutines.play.services)
@@ -72,8 +73,11 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.firebase.firestore.ktx)
-
-    //MapBox dependency
+    
+    // MapBox
     implementation(libs.android)
     implementation(libs.maps.compose)
+
+    // Location
+    implementation ("com.google.android.gms:play-services-location:21.1.0")
 }
