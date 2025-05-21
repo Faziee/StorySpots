@@ -22,8 +22,6 @@ import com.storyspots.ui.theme.White
 import com.storyspots.notificationFeed.NotificationSection
 import com.storyspots.notificationFeed.NotificationsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.storyspots.notificationFeed.NotificationsViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -32,8 +30,7 @@ fun NotificationFeedScreen(
     onBackClick: () -> Unit = {},
     onViewClick: (NotificationItem) -> Unit = {}
 ) {
-    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    val viewModel: NotificationsViewModel = viewModel(factory = NotificationsViewModelFactory(currentUserId))
+    val viewModel: NotificationsViewModel = viewModel()
     val newNotifications by viewModel.newNotifications.collectAsState()
     val lastWeekNotifications by viewModel.lastWeekNotifications.collectAsState()
     val lastMonthNotifications by viewModel.lastMonthNotifications.collectAsState()
@@ -81,6 +78,8 @@ fun NotificationFeedScreen(
                             .background(White)
                             .padding(16.dp)
                     ) {
+
+
                         Column {
                             // New Notifications
                             NotificationSection(
