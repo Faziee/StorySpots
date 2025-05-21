@@ -36,7 +36,6 @@ import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.MapboxExperimental
-import androidx.compose.ui.viewinterop.AndroidView
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.PuckBearing
@@ -75,9 +74,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 .setPersistenceEnabled(true)
                 .build()
 
-//        testFirestoreConnection()
+        // testFirestoreConnection()
 
-        //checking permissions
+        // checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
             locationPermissionGranted.value = true
@@ -91,32 +90,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private fun initializeContent() {
         contentInitialized = true
         setContent {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    MapView(context).also { mapView = it}.apply {
-                        getMapboxMap().loadStyleUri(
-                            "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
-                        ) {
-                            if (locationPermissionGranted.value) {
-                                enableLocationComponent(this)
-                            }
-
-                            //have to explicitly call gestures to be allowed
-                            val gesturesPlugin = this.gestures
-                            gesturesPlugin.updateSettings {
-                                scrollEnabled = true
-                                quickZoomEnabled = true
-                                rotateEnabled = true
-                                pitchEnabled = true
-                            }
-
-                            //annotation manager
-                            val annotationApi = annotations
-                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
-
-        setContent {
-            MapScreen()
+            if (locationPermissionGranted.value) {
+                MapScreen()
+            } else {
+                PermissionRequestScreen()
+            }
         }
     }
 
@@ -129,61 +107,58 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     @Composable
     fun MapScreen() {
-            Box(modifier = Modifier.fillMaxSize()) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        MapView(context).apply {
-                            mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
-                            ) {style ->
-                                if (locationPermissionGranted.value) {
-                                    enableLocationComponent(this)
-                                }
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { context ->
+                    MapView(context).also { mapView = it }.apply {
+                        mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                        ) { style ->
+                            if (locationPermissionGranted.value) {
+                                enableLocationComponent(this)
+                            }
 
-                                //have to explicitly call gestures to be allowed
-                                val gesturesPlugin = this.gestures
-                                gesturesPlugin.updateSettings {
-                                    scrollEnabled = true
-                                    quickZoomEnabled = true
-                                    rotateEnabled = true
-                                    pitchEnabled = true
-                                }
+                            // have to explicitly call gestures to be allowed
+                            val gesturesPlugin = this.gestures
+                            gesturesPlugin.updateSettings {
+                                scrollEnabled = true
+                                quickZoomEnabled = true
+                                rotateEnabled = true
+                                pitchEnabled = true
+                            }
 
-                                //annotation manager
-                                val annotationApi = annotations
-                                pointAnnotationManager = annotationApi.createPointAnnotationManager()
+                            // annotation manager
+                            val annotationApi = annotations
+                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
-
-                                mapboxMap.addOnMapClickListener {point ->
-
-                                    //Code for adding caption and image goes here
-                                    addPin(point)
-
-                                    true
-                                }
+                            mapboxMap.addOnMapClickListener { point ->
+                                // Code for adding caption and image goes here
+                                addPin(point)
+                                true
                             }
                         }
                     }
-                )
-
-                // NOTE: this will be replaced by the navbar button later
-                val showFeed = remember { mutableStateOf(false)}
-
-                Button(
-                    onClick = { showFeed.value = !showFeed.value },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
-                        .zIndex(1f)
-                ) {
-                    Text(if (showFeed.value) "Back to Map" else "Open Feed")
                 }
+            )
 
-                if (showFeed.value) {
-                    NotificationFeedScreen()
-                }
+            // NOTE: this will be replaced by the navbar button later
+            val showFeed = remember { mutableStateOf(false) }
+
+            Button(
+                onClick = { showFeed.value = !showFeed.value },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .zIndex(1f)
+            ) {
+                Text(if (showFeed.value) "Back to Map" else "Open Feed")
+            }
+
+            if (showFeed.value) {
+                NotificationFeedScreen()
             }
         }
+    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -204,15 +179,20 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         if (granted) {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
 
-            // Update the state to enable location on the map
-            enableLocationOnMap()
-            initializeContent()
-            mapView.getMapboxMap().getStyle( { style ->
-                enableLocationComponent(mapView)})
+            // Initialize content if not already initialized
+            if (!contentInitialized) {
+                initializeContent()
+            } else if (::mapView.isInitialized) {
+                mapView.getMapboxMap().getStyle { style ->
+                    enableLocationComponent(mapView)
+                }
+            }
         } else {
             Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
             locationPermissionGranted.value = false
-            initializeContent()
+            if (!contentInitialized) {
+                initializeContent()
+            }
         }
     }
 
@@ -227,7 +207,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun enableLocationComponent(mapView: MapView) {
-
         mapView.location.updateSettings {
             enabled = true
             puckBearingEnabled = true
@@ -241,7 +220,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             accuracyRingColor = Color.parseColor("#4d89cff0")
             accuracyRingBorderColor = Color.parseColor("#80ffffff")
         }
-        
+
         mapView.location.addOnIndicatorPositionChangedListener { point ->
             if (point.latitude() != 0.0 && point.longitude() != 0.0) {
                 mapView.camera.easeTo(
@@ -256,7 +235,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
-
         mapView.camera.easeTo(
             CameraOptions.Builder()
                 .center(point)
@@ -271,8 +249,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     override fun onDestroy() {
         super.onDestroy()
 
-        mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-        mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        if (::mapView.isInitialized) {
+            mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+            mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        }
     }
 
     private fun testFirestoreConnection() {
@@ -299,7 +279,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun addPin(point: Point){
+    private fun addPin(point: Point) {
         val context = this
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
 
