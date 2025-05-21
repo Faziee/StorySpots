@@ -33,4 +33,8 @@ public class LocationComponentActivity : ComponentActivity() {
             }
         }
     }
+
+    public fun CenterToPin() {
+
+    }
 }

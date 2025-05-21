@@ -23,11 +23,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.geojson.Point
-import com.mapbox.maps.MapView
-import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
@@ -36,6 +35,15 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.maps.MapboxExperimental
+import androidx.compose.ui.viewinterop.AndroidView
+import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
+import com.mapbox.maps.plugin.PuckBearing
+import com.mapbox.maps.plugin.animation.MapAnimationOptions
+import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 
 
 @OptIn(MapboxExperimental::class)
@@ -44,6 +52,17 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private val TAG = "MainActivity"
     private lateinit var permissionsManager: PermissionsManager
     private val locationPermissionGranted = mutableStateOf(false)
+
+    private lateinit var mapView: MapView
+
+    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
+        centerMapOnUserLocation(mapView, point)
+    }
+
+    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
+        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
+    }
+
     private var pointAnnotationManager: PointAnnotationManager? = null
     private var contentInitialized = false
 
@@ -51,7 +70,12 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         super.onCreate(savedInstanceState)
 
         FirebaseApp.initializeApp(this)
-        testFirestoreConnection()
+        FirebaseFirestore.getInstance().firestoreSettings =
+            FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)
+                .build()
+
+//        testFirestoreConnection()
 
         //checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -66,6 +90,30 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private fun initializeContent() {
         contentInitialized = true
+        setContent {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { context ->
+                    MapView(context).also { mapView = it}.apply {
+                        getMapboxMap().loadStyleUri(
+                            "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                        ) {
+                            if (locationPermissionGranted.value) {
+                                enableLocationComponent(this)
+                            }
+
+                            //have to explicitly call gestures to be allowed
+                            val gesturesPlugin = this.gestures
+                            gesturesPlugin.updateSettings {
+                                scrollEnabled = true
+                                quickZoomEnabled = true
+                                rotateEnabled = true
+                                pitchEnabled = true
+                            }
+
+                            //annotation manager
+                            val annotationApi = annotations
+                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
         setContent {
             MapScreen()
@@ -137,22 +185,30 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
         }
 
-    @Deprecated("Test")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun onExplanationNeeded(permissionsToExplain: List<String>) {
-        Toast.makeText(this, "This app needs location permission to show your location on the map.", Toast.LENGTH_LONG).show()
+        Toast.makeText(
+            this,
+            "This app needs location permission to show your location on the map.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     override fun onPermissionResult(granted: Boolean) {
+        locationPermissionGranted.value = granted
+
         if (granted) {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
+
             // Update the state to enable location on the map
             enableLocationOnMap()
             initializeContent()
+            mapView.getMapboxMap().getStyle( { style ->
+                enableLocationComponent(mapView)})
         } else {
             Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
             locationPermissionGranted.value = false
@@ -160,20 +216,24 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun enableLocationOnMap() {
-        // This is the non-Compose version you can call from your activity
-        runOnUiThread {
-            locationPermissionGranted.value = true
-            Log.d(TAG, "Location features enabled on map")
+    private fun MapView.safeCenterOnLocation() {
+        val locationListener = object : (Point) -> Unit {
+            override fun invoke(point: Point) {
+                centerMapOnUserLocation(this@safeCenterOnLocation, point)
+                location.removeOnIndicatorPositionChangedListener(this)
+            }
         }
+        location.addOnIndicatorPositionChangedListener(locationListener)
     }
 
     private fun enableLocationComponent(mapView: MapView) {
 
-        val locationComponentPlugin = mapView.location
-
-        locationComponentPlugin.updateSettings {
+        mapView.location.updateSettings {
             enabled = true
+            puckBearingEnabled = true
+            puckBearing = PuckBearing.COURSE
+            locationPuck = LocationPuck2D()
+
             pulsingEnabled = true
             pulsingColor = Color.BLUE
             pulsingMaxRadius = 40f
@@ -181,14 +241,38 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             accuracyRingColor = Color.parseColor("#4d89cff0")
             accuracyRingBorderColor = Color.parseColor("#80ffffff")
         }
+        
+        mapView.location.addOnIndicatorPositionChangedListener { point ->
+            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
+                mapView.camera.easeTo(
+                    CameraOptions.Builder()
+                        .center(point)
+                        .zoom(15.0)
+                        .build(),
+                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
+                )
+            }
+        }
+    }
 
-        locationComponentPlugin.locationPuck = LocationPuck2D(
-            bearingImage = null,  // You can add a custom bearing image
-            shadowImage = null,   // You can add a custom shadow
-            scaleExpression = null
+    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
+
+        mapView.camera.easeTo(
+            CameraOptions.Builder()
+                .center(point)
+                .zoom(15.0)
+                .build(),
+            MapAnimationOptions.mapAnimationOptions {
+                duration(1000)
+            }
         )
+    }
 
-        locationComponentPlugin.enabled = true
+    override fun onDestroy() {
+        super.onDestroy()
+
+        mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+        mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
     }
 
     private fun testFirestoreConnection() {

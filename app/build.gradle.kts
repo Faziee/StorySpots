@@ -53,7 +53,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.location)
     implementation(libs.androidx.material)
+    implementation(libs.coil.compose)
+    implementation (libs.kotlinx.coroutines.play.services)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -71,11 +74,15 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.firebase.firestore.ktx)
-
-    //MapBox dependency
+    
+    // MapBox
     implementation(libs.android)
     implementation(libs.maps.compose)
 
     //Coil Dependency
     implementation("io.coil-kt:coil-compose:2.2.2")
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+
 }
