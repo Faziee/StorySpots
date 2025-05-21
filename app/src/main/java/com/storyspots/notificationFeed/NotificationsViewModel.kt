@@ -2,6 +2,7 @@ package com.storyspots.notificationFeed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.storyspots.model.NotificationItem
@@ -24,7 +25,6 @@ class NotificationsViewModel : ViewModel() {
     private val _lastMonthNotifications = MutableStateFlow<List<NotificationItem>>(emptyList())
     val lastMonthNotifications: StateFlow<List<NotificationItem>> = _lastMonthNotifications.asStateFlow()
 
-    // Loading state
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -60,7 +60,11 @@ class NotificationsViewModel : ViewModel() {
                         val userDoc = db.collection("user").document(userId).get().await()
                         println("User doc for $userId: ${userDoc.data}")
                         val userName = userDoc.getString("username") ?: "Unknown User"
-                        val imageUrl = userDoc.getString("profileImageUrl") ?: ""
+
+                        val imageUrl = userDoc.getString("profile_picture_url")
+                            ?: userDoc.getString("profileImageUrl")
+                            ?: userDoc.getString("profile_picture")
+                            ?: ""
 
                         val storyId = storyRef.id
                         val message = "$userName mentioned you in a story"
@@ -69,6 +73,7 @@ class NotificationsViewModel : ViewModel() {
                             id = doc.id,
                             createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date(),
                             from = userName,
+                            fromUserId = userId,
                             read = doc.getBoolean("read") ?: false,
                             story = storyRef.path,
                             to = toRef.path,

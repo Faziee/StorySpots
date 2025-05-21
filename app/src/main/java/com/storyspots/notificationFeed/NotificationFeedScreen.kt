@@ -70,7 +70,6 @@ fun NotificationFeedScreen(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Notification Sections
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -78,8 +77,6 @@ fun NotificationFeedScreen(
                             .background(White)
                             .padding(16.dp)
                     ) {
-
-
                         Column {
                             // New Notifications
                             NotificationSection(
@@ -97,7 +94,6 @@ fun NotificationFeedScreen(
                                     modifier = Modifier.padding(vertical = 8.dp))
                             }
 
-                            // Last 7 days Notifications
                             if (lastWeekNotifications.isNotEmpty()) {
                                 NotificationSection(
                                     title = "Last 7 days",
@@ -114,7 +110,6 @@ fun NotificationFeedScreen(
                                 }
                             }
 
-                            // Last 30 days Notifications
                             if (lastMonthNotifications.isNotEmpty()) {
                                 NotificationSection(
                                     title = "Last 30 days",
@@ -126,7 +121,6 @@ fun NotificationFeedScreen(
                                 )
                             }
 
-                            // If no notifications at all
                             if (newNotifications.isEmpty() &&
                                 lastWeekNotifications.isEmpty() &&
                                 lastMonthNotifications.isEmpty()) {

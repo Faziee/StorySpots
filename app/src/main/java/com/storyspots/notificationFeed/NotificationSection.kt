@@ -11,7 +11,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.storyspots.model.NotificationItem
-import com.storyspots.ui.components.NotificationRow
 import com.storyspots.ui.theme.DarkText
 
 @Composable

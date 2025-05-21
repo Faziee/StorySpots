@@ -1,6 +1,7 @@
-package com.storyspots.ui.components
+package com.storyspots.notificationFeed
 
-import androidx.compose.foundation.Image
+import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,15 +13,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.storyspots.model.NotificationItem
 import com.storyspots.ui.theme.DarkText
 import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.Pink
 import com.storyspots.ui.theme.White
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun NotificationRow(
@@ -33,15 +39,37 @@ fun NotificationRow(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Profile Image
-        Image(
-            painter = rememberAsyncImagePainter(item.imageUrl),
-            contentDescription = "${item.from}'s profile picture",
+        Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .clip(CircleShape)
+                .background(Color.LightGray),
+        contentAlignment = Alignment.Center
+        ) {
+            if (!item.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "${item.from}'s profile picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onError = { Log.e("ImageLoading", "Failed to load image from ${item.imageUrl}", it.result.throwable) }
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.from.first().toString(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
 
         // Notification Text
         Column(
@@ -57,7 +85,7 @@ fun NotificationRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = item.from,
+                text = item.message ?: item.from,
                 fontSize = 14.sp,
                 color = LightText
             )
