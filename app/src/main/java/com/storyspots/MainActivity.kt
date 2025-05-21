@@ -1,5 +1,6 @@
 package com.storyspots
 
+import NotificationFeedScreen
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
@@ -8,9 +9,18 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
@@ -42,6 +52,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private val TAG = "MainActivity"
     private lateinit var permissionsManager: PermissionsManager
     private val locationPermissionGranted = mutableStateOf(false)
+
     private lateinit var mapView: MapView
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
@@ -53,6 +64,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private var pointAnnotationManager: PointAnnotationManager? = null
+    private var contentInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,14 +77,19 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
 //        testFirestoreConnection()
 
+        //checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
             locationPermissionGranted.value = true
+            initializeContent()
         } else {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
         }
+    }
 
+    private fun initializeContent() {
+        contentInitialized = true
         setContent {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -98,20 +115,75 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             val annotationApi = annotations
                             pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
+        setContent {
+            MapScreen()
+        }
+    }
 
-                            mapboxMap.addOnMapClickListener {point ->
+    @Composable
+    fun PermissionRequestScreen() {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Requesting location permissions...")
+        }
+    }
 
-                                //Code for adding caption and image goes here
-                                addPin(point)
+    @Composable
+    fun MapScreen() {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { context ->
+                        MapView(context).apply {
+                            mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                            ) {style ->
+                                if (locationPermissionGranted.value) {
+                                    enableLocationComponent(this)
+                                }
 
-                                true
+                                //have to explicitly call gestures to be allowed
+                                val gesturesPlugin = this.gestures
+                                gesturesPlugin.updateSettings {
+                                    scrollEnabled = true
+                                    quickZoomEnabled = true
+                                    rotateEnabled = true
+                                    pitchEnabled = true
+                                }
+
+                                //annotation manager
+                                val annotationApi = annotations
+                                pointAnnotationManager = annotationApi.createPointAnnotationManager()
+
+
+                                mapboxMap.addOnMapClickListener {point ->
+
+                                    //Code for adding caption and image goes here
+                                    addPin(point)
+
+                                    true
+                                }
                             }
                         }
                     }
+                )
+
+                // NOTE: this will be replaced by the navbar button later
+                val showFeed = remember { mutableStateOf(false)}
+
+                Button(
+                    onClick = { showFeed.value = !showFeed.value },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .zIndex(1f)
+                ) {
+                    Text(if (showFeed.value) "Back to Map" else "Open Feed")
                 }
-            )
+
+                if (showFeed.value) {
+                    NotificationFeedScreen()
+                }
+            }
         }
-    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -131,11 +203,16 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         if (granted) {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
+
+            // Update the state to enable location on the map
+            enableLocationOnMap()
+            initializeContent()
             mapView.getMapboxMap().getStyle( { style ->
                 enableLocationComponent(mapView)})
         } else {
             Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
             locationPermissionGranted.value = false
+            initializeContent()
         }
     }
 
@@ -230,5 +307,4 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         pointAnnotationManager?.create(annotationOptions)
     }
-
 }
