@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">StorySpots</string>
+    <string name="favourites">Favourites</string>
+    <string name="notifications">Notifications</string>
+    <string name="settings">Settings</string>
+    <string name="create_post">Create</string>
 </resources>
