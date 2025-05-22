@@ -16,4 +16,5 @@ val DarkText = Color(0xFF1D1D1D)
 val MediumText = Color(0xFF3D3D3D)
 val LightText = Color(0xFF6E6E6E)
 val White = Color.White
+val Black = Color.Black
 val Background = Color(0xFFF8F8F8)

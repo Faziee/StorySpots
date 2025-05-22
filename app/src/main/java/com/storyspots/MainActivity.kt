@@ -25,6 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Box
@@ -49,6 +56,8 @@ import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.storyspots.caption.StoryStack
+import com.storyspots.ui.components.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
 
 @OptIn(MapboxExperimental::class)
@@ -81,6 +90,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 .setPersistenceEnabled(true)
                 .build()
 
+        // checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             Log.d(TAG, "Location permission already granted")
             locationPermissionGranted.value = true
@@ -130,6 +140,21 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     @Composable
     fun MapScreen() {
+        //This and (NAVIGATE TO LN 157) will be replaced by navbar later
+        val showFeed = remember { mutableStateOf(false) }
+
+        //This is for the map captions
+        val selectedPin = remember { mutableStateOf<Point?>(null) }
+
+        val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
+
+        LaunchedEffect(selectedPin.value) {
+            selectedPin.value?.let { pin ->
+                val screenCoords = mapView.getMapboxMap().pixelForCoordinate(pin)
+                pinScreenOffset.value = Offset(screenCoords.x.toFloat(), screenCoords.y.toFloat())
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -157,13 +182,27 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                                 addPin(point)
                                 true
                             }
+
+                            pointAnnotationManager?.addClickListener { annotation ->
+                                selectedPin.value = annotation.point
+                                true
+                            }
                         }
                     }
                 }
             )
+            
+            selectedPin.value?.let { pin ->
+                pinScreenOffset.value?.let { offset ->
+                    DismissibleStoryStack(
+                        offset = offset,
+                        onDismiss = { selectedPin.value = null }
+                    )
+                }
+            }
         }
     }
-
+            
     private fun handleNavItemClick(item: NavItem) {
         when (item) {
             NavItem.Home -> {
@@ -283,7 +322,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private fun addPin(point: Point) {
         val context = this
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+
+        val annotationOptions = PointAnnotationOptions()
+            .withPoint(point)
+            .withIconImage(bitmap)
+            .withIconSize(0.1)
         pointAnnotationManager?.create(annotationOptions)
     }
 }

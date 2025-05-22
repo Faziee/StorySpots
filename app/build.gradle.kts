@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.material)
     implementation(libs.coil.compose)
     implementation (libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.room.runtime.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
