@@ -2,8 +2,6 @@ package com.storyspots.caption
 
 import StoryData
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
@@ -41,15 +39,10 @@ import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
 import fetchAllStories
 import androidx.compose.foundation.background
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.room.util.copy
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -196,10 +189,14 @@ fun StoryStack(
         )
     }
 
-    LaunchedEffect(Unit) {
-        fetchAllStories { result ->
+    DisposableEffect(Unit) {
+        val registration = fetchAllStories { result ->
             stories = result
             isLoading = false
+        }
+
+        onDispose {
+            registration.remove()
         }
     }
 
@@ -227,8 +224,9 @@ fun StoryStack(
     }
 
     if (stories.isNotEmpty()) {
-        val story = stories[currentIndex]
+//        val story = stories[currentIndex]
         val visibleStories = stories.drop(currentIndex).take(3)
+        val remainingStoriesCount = stories.size - currentIndex
 
         Box(
             modifier = Modifier
@@ -254,7 +252,7 @@ fun StoryStack(
                         currentIndex = (currentIndex + 1) % stories.size
                     },
                     onLongPress = { showFullscreenOverlay = true },
-                    stackCount = if (index == 0) visibleStories.size else null
+                    stackCount = if (index == 0) remainingStoriesCount else null
                 )
             }
         }
