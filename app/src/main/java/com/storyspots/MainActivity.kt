@@ -18,7 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.google.firebase.FirebaseApp
@@ -44,6 +48,7 @@ import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.storyspots.caption.StoryStack
+import com.storyspots.ui.components.DismissibleStoryStack
 
 
 @OptIn(MapboxExperimental::class)
@@ -112,6 +117,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
 
+        val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
+
+        LaunchedEffect(selectedPin.value) {
+            selectedPin.value?.let { pin ->
+                val screenCoords = mapView.getMapboxMap().pixelForCoordinate(pin)
+                pinScreenOffset.value = Offset(screenCoords.x.toFloat(), screenCoords.y.toFloat())
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -163,7 +177,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
             when {
                 showFeed.value -> NotificationFeedScreen()
-                selectedPin.value != null -> StoryStack()
+            }
+
+            selectedPin.value?.let { pin ->
+                pinScreenOffset.value?.let { offset ->
+                    DismissibleStoryStack(
+                        offset = offset,
+                        onDismiss = { selectedPin.value = null }
+                    )
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.storyspots.caption
 
 import StoryData
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateContentSize
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -29,6 +31,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,30 +39,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
 import fetchAllStories
 
 @Composable
-fun StoryCard(
-    story: StoryData,
-    modifier: Modifier = Modifier,
-    onLongPress: () -> Unit = {}
-) {
+fun StoryCard(story: StoryData,
+              modifier: Modifier = Modifier,
+              onLongPress: () -> Unit = {}
+              ) {
     Card(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
+        elevation = CardDefaults.cardElevation(4.dp),
+        shape = RoundedCornerShape(6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White))
+
+    {
+        Box (
+            contentAlignment = Alignment.TopCenter
+        )
+        {
+            StoryImage(story = story, onLongPress = onLongPress)
+        }
         Column {
-            StoryImage(story, onLongPress = onLongPress)
             Title(story)
             CreatedAt(story)
             Caption(story)
@@ -86,50 +99,60 @@ fun CreatedAt(story: StoryData)
 }
 
 @Composable
-fun StoryImage(
-    story: StoryData,
-    onLongPress: () -> Unit = {}
-) {
+fun StoryImage(story: StoryData, onLongPress: () -> Unit = {})
+{
     story.imageUrl?.let {
         Image(
-            painter = rememberAsyncImagePainter(
-                model = story.imageUrl,
-                placeholder = painterResource(R.drawable.placeholder_image),
-                error = painterResource(R.drawable.error_image)
-            ),
-            contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .fillMaxHeight(0.45f)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onLongPress = {
                             onLongPress()
                         }
                     )
-                }
+                },
+            painter = rememberAsyncImagePainter(
+                model = story.imageUrl,
+                placeholder = painterResource(R.drawable.placeholder_image),
+                error = painterResource(R.drawable.error_image)
+            ),
+            contentDescription = null,
+            contentScale = ContentScale.Crop
         )
     }
 }
 
 //For now, this loads all the stories from the database. TODO: Load by geo-point
-@OptIn(ExperimentalAnimationApi::class)
+@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
-fun StoryStack() {
+fun StoryStack(screenOffset: Offset, onPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit = {}) {
     var stories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showFullscreenOverlay by remember { mutableStateOf(false) }
     var currentIndex by remember { mutableStateOf(0) }
 
-    // Start listening once
-    DisposableEffect(Unit) {
-        val listener = fetchAllStories(limit = 50) { fetchedStories ->
-            stories = fetchedStories
-            isLoading = false
-        }
+    // Offset to position bottom-left of box to the pin center
+    val storyBoxWidth = 150.dp
+    val storyBoxHeight = 160.dp
 
-        onDispose {
-            listener.remove()
+    val density = LocalDensity.current
+    val offsetPx = with(density) {
+        // Convert dp to pixels
+        val widthPx = storyBoxWidth.toPx()
+        val heightPx = storyBoxHeight.toPx()
+
+        Offset(
+            x = screenOffset.x,
+            y = screenOffset.y - heightPx
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        fetchAllStories { result ->
+            stories = result
+            isLoading = false
         }
     }
 
@@ -143,22 +166,37 @@ fun StoryStack() {
         )
     } else if (stories.isNotEmpty()) {
         val story = stories[currentIndex]
+        val visibleStories = stories.drop(currentIndex).take(3)
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .clickable {
+                .onGloballyPositioned { coords -> onPositioned(coords) }
+                .offset { IntOffset(offsetPx.x.toInt(), offsetPx.y.toInt()) }
+                .size(storyBoxWidth, storyBoxHeight)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
                     currentIndex = (currentIndex + 1) % stories.size
-                },
+                }
+                .zIndex(1f),
             contentAlignment = Alignment.Center
         ) {
-            StoryCard(
-                story = story,
-                onLongPress = { showFullscreenOverlay = true },
-                modifier = Modifier
-                    .zIndex(1f)
-                    .size(width = 150.dp, height = 200.dp)
-            )
+            visibleStories.forEachIndexed { index, story ->
+                val stackIndex = visibleStories.size - 1 - index
+
+                StoryCard(
+                    story = story,
+                    modifier = Modifier
+                        .zIndex(stackIndex.toFloat())
+                        .size(width = 150.dp, height = 160.dp)
+                        .offset(
+                            x = (stackIndex * 5).dp,
+                            y = -(stackIndex * 5).dp
+                        ),
+                    onLongPress = { showFullscreenOverlay = true }
+                )
+            }
         }
     } else {
         Text("No stories found.")
