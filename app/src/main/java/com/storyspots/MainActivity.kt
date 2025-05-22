@@ -1,5 +1,7 @@
 package com.storyspots
 
+import BottomNavBar
+import NavItem
 import NotificationFeedScreen
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -44,6 +46,13 @@ import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -53,6 +62,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private val locationPermissionGranted = mutableStateOf(false)
 
     private lateinit var mapView: MapView
+    private var currentScreen by mutableStateOf("home")
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
         centerMapOnUserLocation(mapView, point)
@@ -90,6 +100,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private fun initializeContent() {
         contentInitialized = true
         setContent {
+            androidx.compose.material3.MaterialTheme {
+                Scaffold(
+                    bottomBar = {
+                        BottomNavBar(
+                            currentRoute = currentScreen,
+                            onItemClick = { item ->
+                                currentScreen = item.route
+                                handleNavItemClick(item)
+
             if (locationPermissionGranted.value) {
                 MapScreen()
             } else {
@@ -116,9 +135,82 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         ) { style ->
                             if (locationPermissionGranted.value) {
                                 enableLocationComponent(this)
-                            }
 
-                            // have to explicitly call gestures to be allowed
+                            }
+                        )
+                    }
+                ) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        AndroidView(
+                            modifier = Modifier.fillMaxSize(),
+                            factory = { context ->
+                                MapView(context).also { mapView = it }.apply {
+                                    getMapboxMap().loadStyleUri(
+                                        "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
+                                    ) {
+                                        if (locationPermissionGranted.value) {
+                                            enableLocationComponent(this)
+                                        }
+
+                                        //have to explicitly call gestures to be allowed
+                                        val gesturesPlugin = this.gestures
+                                        gesturesPlugin.updateSettings {
+                                            scrollEnabled = true
+                                            quickZoomEnabled = true
+                                            rotateEnabled = true
+                                            pitchEnabled = true
+                                        }
+
+                                        //annotation manager
+                                        val annotationApi = annotations
+                                        pointAnnotationManager =
+                                            annotationApi.createPointAnnotationManager()
+
+
+                                        mapboxMap.addOnMapClickListener { point ->
+
+                                            //Code for adding caption and image goes here
+                                            addPin(point)
+
+                                            true
+                                        }
+                                    }
+                                }
+                            })
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleNavItemClick(item: NavItem) {
+        when (item) {
+            NavItem.Home -> {
+                Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
+            }
+
+            NavItem.Favourites -> {
+                Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
+            }
+
+            NavItem.Notifications -> {
+                Toast.makeText(this, "Notifications selected", Toast.LENGTH_SHORT).show()
+            }
+
+            NavItem.Settings -> {
+                Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
+            }
+
+            NavItem.CreatePost -> {
+                Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
+            }
+
+            else -> {}
+
                             val gesturesPlugin = this.gestures
                             gesturesPlugin.updateSettings {
                                 scrollEnabled = true
@@ -160,7 +252,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -178,7 +274,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         if (granted) {
             Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
-
+            mapView.getMapboxMap().getStyle({ style ->
+                enableLocationComponent(mapView)
+            })
             // Initialize content if not already initialized
             if (!contentInitialized) {
                 initializeContent()
@@ -188,7 +286,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 }
             }
         } else {
-            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT)
+                .show()
             locationPermissionGranted.value = false
             if (!contentInitialized) {
                 initializeContent()
@@ -249,6 +348,12 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     override fun onDestroy() {
         super.onDestroy()
 
+        mapView.location.removeOnIndicatorPositionChangedListener(
+            onIndicatorPositionChangedListener
+        )
+        mapView.location.removeOnIndicatorBearingChangedListener(
+            onIndicatorBearingChangedListener
+        )
         if (::mapView.isInitialized) {
             mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
             mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
@@ -269,7 +374,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             db.collection("connection_tests")
                 .add(testData)
                 .addOnSuccessListener { documentReference ->
-                    Log.d(TAG, "Firebase connection successful! Document ID: ${documentReference.id}")
+                    Log.d(
+                        TAG,
+                        "Firebase connection successful! Document ID: ${documentReference.id}"
+                    )
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG, "Firebase connection failed", e)
