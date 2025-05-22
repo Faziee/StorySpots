@@ -24,6 +24,7 @@ import androidx.compose.ui.zIndex
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.gson.JsonObject
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.geojson.Point
@@ -43,6 +44,8 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import java.util.UUID
+import kotlin.uuid.Uuid
 
 
 @OptIn(MapboxExperimental::class)
@@ -134,6 +137,12 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             mapboxMap.addOnMapClickListener { point ->
                                 // Code for adding caption and image goes here
                                 addPin(point)
+                                true
+                            }
+
+                            pointAnnotationManager?.addClickListener { annotation ->
+                                val point = annotation.point
+                                onPinClicked(point.latitude(), point.longitude())
                                 true
                             }
                         }
@@ -283,8 +292,19 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         val context = this
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
 
-        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+        val annotationOptions = PointAnnotationOptions()
+            .withPoint(point)
+            .withIconImage(bitmap)
+            .withIconSize(0.1)
 
         pointAnnotationManager?.create(annotationOptions)
+    }
+
+    private fun onPinClicked(latitude: Double, longitude: Double) {
+        Toast.makeText(
+            this,
+            "Clicked Location: ($latitude, $longitude)",
+            Toast.LENGTH_LONG
+        ).show()
     }
 }
