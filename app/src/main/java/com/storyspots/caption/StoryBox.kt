@@ -10,6 +10,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.with
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -38,20 +40,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
 import fetchAllStories
 
 @Composable
-fun StoryCard(story: StoryData, modifier: Modifier = Modifier) {
-    Card(modifier = modifier,
+fun StoryCard(
+    story: StoryData,
+    modifier: Modifier = Modifier,
+    onLongPress: () -> Unit = {}
+) {
+    Card(
+        modifier = modifier,
         elevation = CardDefaults.cardElevation(8.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White))
-    {
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
         Column {
-            StoryImage(story)
+            StoryImage(story, onLongPress = onLongPress)
             Title(story)
             CreatedAt(story)
             Caption(story)
@@ -78,8 +86,10 @@ fun CreatedAt(story: StoryData)
 }
 
 @Composable
-fun StoryImage(story: StoryData)
-{
+fun StoryImage(
+    story: StoryData,
+    onLongPress: () -> Unit = {}
+) {
     story.imageUrl?.let {
         Image(
             painter = rememberAsyncImagePainter(
@@ -88,7 +98,16 @@ fun StoryImage(story: StoryData)
                 error = painterResource(R.drawable.error_image)
             ),
             contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(200.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            onLongPress()
+                        }
+                    )
+                }
         )
     }
 }
@@ -99,6 +118,7 @@ fun StoryImage(story: StoryData)
 fun StoryStack() {
     var stories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var showFullscreenOverlay by remember { mutableStateOf(false) }
     var currentIndex by remember { mutableStateOf(0) }
 
     // Start listening once
@@ -113,36 +133,39 @@ fun StoryStack() {
         }
     }
 
-    if (isLoading) {
+    when (isLoading) {
         Text("Loading stories...")
     }
-    else if (stories.isNotEmpty())
-    {
-        val story = stories[currentIndex]
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable {
-                    currentIndex = (currentIndex + 1) % stories.size
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            StoryCard(
-                story = story,
-                modifier = Modifier
-                    .zIndex(1f)
-                    .size(width = 150.dp, height = 200.dp)
+    stories.isNotEmpty() && showFullscreenOverlay -> {
+            FullscreenStoryOverlay(
+                stories = stories,
+                onClose = { showFullscreenOverlay = false }
             )
-        }
-    } else {
-        Text("No stories found.")
-    }
-}
+     }
 
-@Preview
-@Composable
-fun PreviewStoryBox()
-{
-    StoryStack()
+     stories.isNotEmpty() -> {
+            val story = stories[currentIndex]
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable {
+                        currentIndex = (currentIndex + 1) % stories.size
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                StoryCard(
+                    story = story,
+                    onLongPress = { showFullscreenOverlay = true },
+                    modifier = Modifier
+                        .zIndex(1f)
+                        .size(width = 150.dp, height = 200.dp)
+                )
+            }
+        }
+     else -> {
+           Text("No stories found.")
+        }
+    }
 }
