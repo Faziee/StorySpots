@@ -44,6 +44,7 @@ android {
 
 dependencies {
 
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -78,6 +79,10 @@ dependencies {
     implementation(libs.android)
     implementation(libs.maps.compose)
 
+    //Coil Dependency
+    implementation("io.coil-kt:coil-compose:2.2.2")
+
     // Location
-    implementation ("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+
 }
