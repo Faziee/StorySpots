@@ -133,39 +133,34 @@ fun StoryStack() {
         }
     }
 
-    when (isLoading) {
+    if (isLoading) {
         Text("Loading stories...")
-    }
 
-    stories.isNotEmpty() && showFullscreenOverlay -> {
-            FullscreenStoryOverlay(
-                stories = stories,
-                onClose = { showFullscreenOverlay = false }
-            )
-     }
+    } else if (stories.isNotEmpty() && showFullscreenOverlay) {
+        FullscreenStoryOverlay(
+            stories = stories,
+            onClose = { showFullscreenOverlay = false }
+        )
+    } else if (stories.isNotEmpty()) {
+        val story = stories[currentIndex]
 
-     stories.isNotEmpty() -> {
-            val story = stories[currentIndex]
-
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable {
+                    currentIndex = (currentIndex + 1) % stories.size
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            StoryCard(
+                story = story,
+                onLongPress = { showFullscreenOverlay = true },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clickable {
-                        currentIndex = (currentIndex + 1) % stories.size
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                StoryCard(
-                    story = story,
-                    onLongPress = { showFullscreenOverlay = true },
-                    modifier = Modifier
-                        .zIndex(1f)
-                        .size(width = 150.dp, height = 200.dp)
-                )
-            }
+                    .zIndex(1f)
+                    .size(width = 150.dp, height = 200.dp)
+            )
         }
-     else -> {
-           Text("No stories found.")
-        }
+    } else {
+        Text("No stories found.")
     }
 }
