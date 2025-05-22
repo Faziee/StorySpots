@@ -43,6 +43,7 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.storyspots.caption.StoryStack
 
 
 @OptIn(MapboxExperimental::class)
@@ -73,8 +74,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .build()
-
-        // testFirestoreConnection()
 
         // checking permissions
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -107,6 +106,12 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     @Composable
     fun MapScreen() {
+        //This and (NAVIGATE TO LN 157) will be replaced by navbar later
+        val showFeed = remember { mutableStateOf(false) }
+
+        //This is for the map captions
+        val selectedPin = remember { mutableStateOf<Point?>(null) }
+
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -136,13 +141,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                                 addPin(point)
                                 true
                             }
+
+                            pointAnnotationManager?.addClickListener { annotation ->
+                                selectedPin.value = annotation.point
+                                true
+                            }
                         }
                     }
                 }
             )
-
-            // NOTE: this will be replaced by the navbar button later
-            val showFeed = remember { mutableStateOf(false) }
 
             Button(
                 onClick = { showFeed.value = !showFeed.value },
@@ -154,8 +161,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 Text(if (showFeed.value) "Back to Map" else "Open Feed")
             }
 
-            if (showFeed.value) {
-                NotificationFeedScreen()
+            when {
+                showFeed.value -> NotificationFeedScreen()
+                selectedPin.value != null -> StoryStack()
             }
         }
     }
@@ -283,7 +291,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         val context = this
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
 
-        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+        val annotationOptions = PointAnnotationOptions()
+            .withPoint(point)
+            .withIconImage(bitmap)
+            .withIconSize(0.1)
 
         pointAnnotationManager?.create(annotationOptions)
     }
