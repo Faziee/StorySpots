@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             }
                         )
                     }
-                ) { innerPadding ->  // This handles navbar spacing automatically
+                ) { innerPadding ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -149,16 +149,20 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 // Already on home/map screen
                 Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
             }
+
             NavItem.Favourites -> {
                 Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
                 // Later: navigate to favorites screen
             }
+
             NavItem.Notifications -> {
                 Toast.makeText(this, "Notifications selected", Toast.LENGTH_SHORT).show()
             }
+
             NavItem.Settings -> {
                 Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
             }
+
             NavItem.CreatePost -> {
                 Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
                 // Your teammate will handle this part
@@ -168,134 +172,134 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-        override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<String>,
-            grantResults: IntArray
-        ) {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 
-        override fun onExplanationNeeded(permissionsToExplain: List<String>) {
-            Toast.makeText(
-                this,
-                "This app needs location permission to show your location on the map.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+    override fun onExplanationNeeded(permissionsToExplain: List<String>) {
+        Toast.makeText(
+            this,
+            "This app needs location permission to show your location on the map.",
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
-        override fun onPermissionResult(granted: Boolean) {
-            locationPermissionGranted.value = granted
+    override fun onPermissionResult(granted: Boolean) {
+        locationPermissionGranted.value = granted
 
-            if (granted) {
-                Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
-                mapView.getMapboxMap().getStyle({ style ->
-                    enableLocationComponent(mapView)
-                })
-            } else {
-                Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT)
-                    .show()
-                locationPermissionGranted.value = false
-            }
-        }
-
-        private fun MapView.safeCenterOnLocation() {
-            val locationListener = object : (Point) -> Unit {
-                override fun invoke(point: Point) {
-                    centerMapOnUserLocation(this@safeCenterOnLocation, point)
-                    location.removeOnIndicatorPositionChangedListener(this)
-                }
-            }
-            location.addOnIndicatorPositionChangedListener(locationListener)
-        }
-
-        private fun enableLocationComponent(mapView: MapView) {
-
-            mapView.location.updateSettings {
-                enabled = true
-                puckBearingEnabled = true
-                puckBearing = PuckBearing.COURSE
-                locationPuck = LocationPuck2D()
-
-                pulsingEnabled = true
-                pulsingColor = Color.BLUE
-                pulsingMaxRadius = 40f
-                showAccuracyRing = true
-                accuracyRingColor = Color.parseColor("#4d89cff0")
-                accuracyRingBorderColor = Color.parseColor("#80ffffff")
-            }
-
-            mapView.location.addOnIndicatorPositionChangedListener { point ->
-                if (point.latitude() != 0.0 && point.longitude() != 0.0) {
-                    mapView.camera.easeTo(
-                        CameraOptions.Builder()
-                            .center(point)
-                            .zoom(15.0)
-                            .build(),
-                        MapAnimationOptions.mapAnimationOptions { duration(1000) }
-                    )
-                }
-            }
-        }
-
-        private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
-
-            mapView.camera.easeTo(
-                CameraOptions.Builder()
-                    .center(point)
-                    .zoom(15.0)
-                    .build(),
-                MapAnimationOptions.mapAnimationOptions {
-                    duration(1000)
-                }
-            )
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
-
-            mapView.location.removeOnIndicatorPositionChangedListener(
-                onIndicatorPositionChangedListener
-            )
-            mapView.location.removeOnIndicatorBearingChangedListener(
-                onIndicatorBearingChangedListener
-            )
-        }
-
-        private fun testFirestoreConnection() {
-            try {
-                Log.d(TAG, "Attempting to initialize Firebase Firestore")
-                val db = FirebaseFirestore.getInstance()
-                Log.d(TAG, "Firestore instance obtained successfully")
-
-                val testData = hashMapOf(
-                    "timestamp" to System.currentTimeMillis(),
-                    "message" to "Firebase connection test"
-                )
-
-                db.collection("connection_tests")
-                    .add(testData)
-                    .addOnSuccessListener { documentReference ->
-                        Log.d(
-                            TAG,
-                            "Firebase connection successful! Document ID: ${documentReference.id}"
-                        )
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e(TAG, "Firebase connection failed", e)
-                    }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error initializing Firebase", e)
-            }
-        }
-
-        private fun addPin(point: Point) {
-            val context = this
-            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-
-            val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
-
-            pointAnnotationManager?.create(annotationOptions)
+        if (granted) {
+            Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
+            mapView.getMapboxMap().getStyle({ style ->
+                enableLocationComponent(mapView)
+            })
+        } else {
+            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT)
+                .show()
+            locationPermissionGranted.value = false
         }
     }
+
+    private fun MapView.safeCenterOnLocation() {
+        val locationListener = object : (Point) -> Unit {
+            override fun invoke(point: Point) {
+                centerMapOnUserLocation(this@safeCenterOnLocation, point)
+                location.removeOnIndicatorPositionChangedListener(this)
+            }
+        }
+        location.addOnIndicatorPositionChangedListener(locationListener)
+    }
+
+    private fun enableLocationComponent(mapView: MapView) {
+
+        mapView.location.updateSettings {
+            enabled = true
+            puckBearingEnabled = true
+            puckBearing = PuckBearing.COURSE
+            locationPuck = LocationPuck2D()
+
+            pulsingEnabled = true
+            pulsingColor = Color.BLUE
+            pulsingMaxRadius = 40f
+            showAccuracyRing = true
+            accuracyRingColor = Color.parseColor("#4d89cff0")
+            accuracyRingBorderColor = Color.parseColor("#80ffffff")
+        }
+
+        mapView.location.addOnIndicatorPositionChangedListener { point ->
+            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
+                mapView.camera.easeTo(
+                    CameraOptions.Builder()
+                        .center(point)
+                        .zoom(15.0)
+                        .build(),
+                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
+                )
+            }
+        }
+    }
+
+    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
+
+        mapView.camera.easeTo(
+            CameraOptions.Builder()
+                .center(point)
+                .zoom(15.0)
+                .build(),
+            MapAnimationOptions.mapAnimationOptions {
+                duration(1000)
+            }
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        mapView.location.removeOnIndicatorPositionChangedListener(
+            onIndicatorPositionChangedListener
+        )
+        mapView.location.removeOnIndicatorBearingChangedListener(
+            onIndicatorBearingChangedListener
+        )
+    }
+
+    private fun testFirestoreConnection() {
+        try {
+            Log.d(TAG, "Attempting to initialize Firebase Firestore")
+            val db = FirebaseFirestore.getInstance()
+            Log.d(TAG, "Firestore instance obtained successfully")
+
+            val testData = hashMapOf(
+                "timestamp" to System.currentTimeMillis(),
+                "message" to "Firebase connection test"
+            )
+
+            db.collection("connection_tests")
+                .add(testData)
+                .addOnSuccessListener { documentReference ->
+                    Log.d(
+                        TAG,
+                        "Firebase connection successful! Document ID: ${documentReference.id}"
+                    )
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Firebase connection failed", e)
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing Firebase", e)
+        }
+    }
+
+    private fun addPin(point: Point) {
+        val context = this
+        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+
+        val annotationOptions = PointAnnotationOptions().withPoint(point).withIconImage(bitmap)
+
+        pointAnnotationManager?.create(annotationOptions)
+    }
+}
