@@ -2,11 +2,13 @@ package com.storyspots.caption
 
 import StoryData
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,14 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
 import fetchAllStories
 
 @Composable
-fun StoryCard(story: StoryData) {
+fun StoryCard(
+    story: StoryData,
+    onLongPress: () -> Unit = {}
+) {
     Column {
-        StoryImage(story)
+        StoryImage(story, onLongPress = onLongPress)
         Title(story)
         CreatedAt(story)
         Caption(story)
@@ -51,8 +57,10 @@ fun CreatedAt(story: StoryData)
 }
 
 @Composable
-fun StoryImage(story: StoryData)
-{
+fun StoryImage(
+    story: StoryData,
+    onLongPress: () -> Unit = {}
+) {
     story.imageUrl?.let {
         Image(
             painter = rememberAsyncImagePainter(
@@ -61,7 +69,16 @@ fun StoryImage(story: StoryData)
                 error = painterResource(R.drawable.error_image)
             ),
             contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(200.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            onLongPress()
+                        }
+                    )
+                }
         )
     }
 }
@@ -71,6 +88,7 @@ fun StoryImage(story: StoryData)
 fun StoryStack() {
     var stories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var showFullscreenOverlay by remember { mutableStateOf(false) }
 
     // Start listening once
     DisposableEffect(Unit) {
@@ -87,11 +105,21 @@ fun StoryStack() {
     if (isLoading) {
         Text("Loading stories...")
     }
-    else
-    {
-        LazyRow {
-            items(stories) { story ->
-                StoryCard(story)
+    else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyRow {
+                items(stories) { story ->
+                    StoryCard(story = story, onLongPress = {
+                        showFullscreenOverlay = true
+                    })
+                }
+            }
+
+            if (showFullscreenOverlay) {
+                FullscreenStoryOverlay(
+                    stories = stories,
+                    onClose = { showFullscreenOverlay = false }
+                )
             }
         }
     }
