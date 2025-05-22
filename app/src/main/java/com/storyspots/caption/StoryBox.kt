@@ -127,7 +127,10 @@ fun StoryImage(story: StoryData, onLongPress: () -> Unit = {})
 //For now, this loads all the stories from the database. TODO: Load by geo-point
 @SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
-fun StoryStack(screenOffset: Offset, onPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit = {}) {
+fun StoryStack(
+    screenOffset: Offset,
+    onPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit = {}
+) {
     var stories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showFullscreenOverlay by remember { mutableStateOf(false) }
@@ -139,10 +142,7 @@ fun StoryStack(screenOffset: Offset, onPositioned: (androidx.compose.ui.layout.L
 
     val density = LocalDensity.current
     val offsetPx = with(density) {
-        // Convert dp to pixels
-        val widthPx = storyBoxWidth.toPx()
         val heightPx = storyBoxHeight.toPx()
-
         Offset(
             x = screenOffset.x,
             y = screenOffset.y - heightPx
@@ -158,13 +158,27 @@ fun StoryStack(screenOffset: Offset, onPositioned: (androidx.compose.ui.layout.L
 
     if (isLoading) {
         Text("Loading stories...")
+        return
+    }
 
-    } else if (stories.isNotEmpty() && showFullscreenOverlay) {
-        FullscreenStoryOverlay(
-            stories = stories,
-            onClose = { showFullscreenOverlay = false }
-        )
-    } else if (stories.isNotEmpty()) {
+    if (showFullscreenOverlay && stories.isNotEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {})
+                }
+                .zIndex(2f)
+        ) {
+            FullscreenStoryOverlay(
+                stories = stories,
+                onClose = { showFullscreenOverlay = false }
+            )
+        }
+        return
+    }
+
+    if (stories.isNotEmpty()) {
         val story = stories[currentIndex]
         val visibleStories = stories.drop(currentIndex).take(3)
 
@@ -182,11 +196,11 @@ fun StoryStack(screenOffset: Offset, onPositioned: (androidx.compose.ui.layout.L
                 .zIndex(1f),
             contentAlignment = Alignment.Center
         ) {
-            visibleStories.forEachIndexed { index, story ->
+            visibleStories.forEachIndexed { index, stackedStory ->
                 val stackIndex = visibleStories.size - 1 - index
 
                 StoryCard(
-                    story = story,
+                    story = stackedStory,
                     modifier = Modifier
                         .zIndex(stackIndex.toFloat())
                         .size(width = 150.dp, height = 160.dp)
