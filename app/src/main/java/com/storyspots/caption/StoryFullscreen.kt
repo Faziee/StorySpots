@@ -3,6 +3,7 @@ package com.storyspots.caption
 import com.storyspots.ui.theme.DarkText
 import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.White
+import com.storyspots.ui.theme.Black
 import com.storyspots.ui.theme.MediumText
 import StoryData
 import androidx.compose.foundation.Image
@@ -13,10 +14,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,44 +41,54 @@ fun FullscreenStoryOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(White)
+            .background(Black.copy(alpha = 0.3f))
+            .clickable { onClose() },
+        contentAlignment = Alignment.Center
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Stories",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkText
-                )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .fillMaxHeight(0.70f)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {},
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Stories",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkText
+                    )
 
-                Text(
-                    text = "✕",
-                    fontSize = 20.sp,
-                    color = LightText,
-                    modifier = Modifier.clickable { onClose() }
-                )
-            }
+                    Text(
+                        text = "✕",
+                        fontSize = 24.sp,
+                        color = LightText,
+                        modifier = Modifier
+                            .clickable { onClose() }
+                            .padding(4.dp)
+                    )
+                }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(LightText.copy(alpha = 0.3f))
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(stories) { story ->
-                    FullscreenStoryCard(story = story)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(stories) { story ->
+                        FullscreenStoryCard(story = story)
+                    }
                 }
             }
         }
