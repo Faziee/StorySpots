@@ -2,17 +2,8 @@ package com.storyspots.caption
 
 import StoryData
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.with
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,17 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,11 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -53,29 +38,93 @@ import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
 import fetchAllStories
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 
 @Composable
-fun StoryCard(story: StoryData,
-              modifier: Modifier = Modifier,
-              onLongPress: () -> Unit = {}
-              ) {
-    Card(
-        modifier = modifier,
-        elevation = CardDefaults.cardElevation(4.dp),
-        shape = RoundedCornerShape(6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White))
-
-    {
-        Box (
-            contentAlignment = Alignment.TopCenter
-        )
-        {
-            StoryImage(story = story, onLongPress = onLongPress)
+fun StoryCard(
+    story: StoryData,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    onLongPress: () -> Unit = {},
+    stackCount: Int? = null
+) {
+    Box(modifier = modifier) {
+        stackCount?.let {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-6).dp, y = 6.dp)
+                    .size(24.dp)
+                    .background(Color(0xFFE91E63), shape = RoundedCornerShape(12.dp))
+                    .zIndex(3f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = it.toString(),
+                    color = Color.White
+                )
+            }
         }
-        Column {
-            Title(story)
-            CreatedAt(story)
-            Caption(story)
+
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            elevation = CardDefaults.cardElevation(4.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Green)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 5.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onClick() },
+                            onLongPress = { onLongPress() }
+                        )
+                    },
+                elevation = CardDefaults.cardElevation(0.dp),
+                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column {
+                    story.imageUrl?.let {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                            painter = rememberAsyncImagePainter(
+                                model = it,
+                                placeholder = painterResource(R.drawable.placeholder_image),
+                                error = painterResource(R.drawable.error_image)
+                            ),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = story.title,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        story.createdAt?.let {
+                            Text(
+                                text = it.toDate().toString(),
+                                color = Color(0xFFE91E63),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        story.caption?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -98,32 +147,6 @@ fun CreatedAt(story: StoryData)
     story.createdAt?.let { Text(it.toDate().toString()) }
 }
 
-@Composable
-fun StoryImage(story: StoryData, onLongPress: () -> Unit = {})
-{
-    story.imageUrl?.let {
-        Image(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.45f)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            onLongPress()
-                        }
-                    )
-                },
-            painter = rememberAsyncImagePainter(
-                model = story.imageUrl,
-                placeholder = painterResource(R.drawable.placeholder_image),
-                error = painterResource(R.drawable.error_image)
-            ),
-            contentDescription = null,
-            contentScale = ContentScale.Crop
-        )
-    }
-}
-
 //For now, this loads all the stories from the database. TODO: Load by geo-point
 @SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
@@ -137,8 +160,8 @@ fun StoryStack(
     var currentIndex by remember { mutableStateOf(0) }
 
     // Offset to position bottom-left of box to the pin center
-    val storyBoxWidth = 150.dp
-    val storyBoxHeight = 160.dp
+    val storyBoxWidth = 180.dp
+    val storyBoxHeight = 200.dp
 
     val density = LocalDensity.current
     val offsetPx = with(density) {
@@ -175,6 +198,7 @@ fun StoryStack(
                 onClose = { showFullscreenOverlay = false }
             )
         }
+
         return
     }
 
@@ -187,14 +211,8 @@ fun StoryStack(
                 .onGloballyPositioned { coords -> onPositioned(coords) }
                 .offset { IntOffset(offsetPx.x.toInt(), offsetPx.y.toInt()) }
                 .size(storyBoxWidth, storyBoxHeight)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    currentIndex = (currentIndex + 1) % stories.size
-                }
-                .zIndex(1f),
-            contentAlignment = Alignment.Center
+                .zIndex(1f)
+                .pointerInput(Unit) {}
         ) {
             visibleStories.forEachIndexed { index, stackedStory ->
                 val stackIndex = visibleStories.size - 1 - index
@@ -203,12 +221,16 @@ fun StoryStack(
                     story = stackedStory,
                     modifier = Modifier
                         .zIndex(stackIndex.toFloat())
-                        .size(width = 150.dp, height = 160.dp)
+                        .size(storyBoxWidth, storyBoxHeight)
                         .offset(
                             x = (stackIndex * 5).dp,
                             y = -(stackIndex * 5).dp
                         ),
-                    onLongPress = { showFullscreenOverlay = true }
+                    onClick = {
+                        currentIndex = (currentIndex + 1) % stories.size
+                    },
+                    onLongPress = { showFullscreenOverlay = true },
+                    stackCount = if (index == 0) visibleStories.size else null
                 )
             }
         }
