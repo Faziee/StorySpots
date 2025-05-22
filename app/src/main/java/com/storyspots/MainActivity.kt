@@ -50,7 +50,6 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
-//import com.mapbox.maps.plugin.locationcomponent.location2D
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -101,7 +100,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         BottomNavBar(
                             currentRoute = currentScreen,
                             onItemClick = { item ->
-                                currentScreen = item.route
                                 handleNavItemClick(item)
                             }
                         )
@@ -112,10 +110,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             .fillMaxSize()
                             .padding(innerPadding)
                     ) {
-                        if (locationPermissionGranted.value) {
-                            MapScreen()
-                        } else {
-                            PermissionRequestScreen()
+                        when {
+                            !locationPermissionGranted.value -> PermissionRequestScreen()
+                            currentScreen == "notifications" -> NotificationFeedScreen()
+                            else -> MapScreen()
                         }
                     }
                 }
@@ -132,8 +130,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     @Composable
     fun MapScreen() {
-        val showFeed = remember { mutableStateOf(false) }
-
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -165,30 +161,32 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                     }
                 }
             )
-
-            Button(
-                onClick = { showFeed.value = !showFeed.value },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .zIndex(1f)
-            ) {
-                Text(if (showFeed.value) "Back to Map" else "Open Feed")
-            }
-
-            if (showFeed.value) {
-                NotificationFeedScreen()
-            }
         }
     }
 
     private fun handleNavItemClick(item: NavItem) {
         when (item) {
-            NavItem.Home -> Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
-            NavItem.Favourites -> Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
-            NavItem.Notifications -> Toast.makeText(this, "Notifications selected", Toast.LENGTH_SHORT).show()
-            NavItem.Settings -> Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
-            NavItem.CreatePost -> Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
+            NavItem.Home -> {
+                currentScreen = "home"
+                Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
+            }
+            NavItem.Favourites -> {
+                currentScreen = "favorites"
+                Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
+            }
+            NavItem.Notifications -> {
+                // Toggle between notifications and map
+                currentScreen = if (currentScreen == "notifications") "home" else "notifications"
+            }
+            NavItem.Settings -> {
+                currentScreen = "settings"
+                Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
+            }
+            NavItem.CreatePost -> {
+                currentScreen = "create"
+                Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
+            }
+
             else -> {}
         }
     }
