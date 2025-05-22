@@ -2,6 +2,8 @@ package com.storyspots.caption
 
 import StoryData
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
@@ -40,6 +42,17 @@ import com.storyspots.R
 import fetchAllStories
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.room.util.copy
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun StoryCard(
@@ -56,7 +69,7 @@ fun StoryCard(
                     .align(Alignment.TopEnd)
                     .offset(x = (-6).dp, y = 6.dp)
                     .size(24.dp)
-                    .background(Color(0xFFE91E63), shape = RoundedCornerShape(12.dp))
+                    .background(Color(0xFFFF398F), shape = RoundedCornerShape(12.dp))
                     .zIndex(3f),
                 contentAlignment = Alignment.Center
             ) {
@@ -71,12 +84,12 @@ fun StoryCard(
             modifier = Modifier.fillMaxSize(),
             elevation = CardDefaults.cardElevation(4.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Green)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF8FFF53))
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 5.dp)
+                    .padding(bottom = 3.dp)
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { onClick() },
@@ -107,19 +120,25 @@ fun StoryCard(
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(
                             text = story.title,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black
+                            )
                         )
                         story.createdAt?.let {
                             Text(
-                                text = it.toDate().toString(),
-                                color = Color(0xFFE91E63),
-                                style = MaterialTheme.typography.bodySmall
+                                text = formatFriendlyDate(story.createdAt.toDate()),
+                                color = Color(0xFFFF398F),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Light
+                                )
                             )
                         }
                         story.caption?.let {
                             Text(
                                 text = it,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Light
+                                )
                             )
                         }
                     }
@@ -129,22 +148,27 @@ fun StoryCard(
     }
 }
 
-@Composable
-fun Title(story: StoryData)
-{
-    Text(text = story.title)
-}
+fun formatFriendlyDate(date: Date): String {
+    val now = Date()
+    val diffInMillis = now.time - date.time
 
-@Composable
-fun Caption(story: StoryData)
-{
-    story.caption?.let { Text(it) }
-}
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(diffInMillis)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis)
+    val hours = TimeUnit.MILLISECONDS.toHours(diffInMillis)
+    val days = TimeUnit.MILLISECONDS.toDays(diffInMillis)
 
-@Composable
-fun CreatedAt(story: StoryData)
-{
-    story.createdAt?.let { Text(it.toDate().toString()) }
+    return when {
+        seconds < 60 -> "Just now"
+        minutes < 60 -> "$minutes minutes ago"
+        hours < 24 -> "$hours hours ago"
+        days == 1L -> "Yesterday"
+        days in 2..6 -> "$days days ago"
+        days in 7..13 -> "Last week"
+        else -> {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            sdf.format(date)
+        }
+    }
 }
 
 //For now, this loads all the stories from the database. TODO: Load by geo-point
