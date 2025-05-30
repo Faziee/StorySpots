@@ -1,12 +1,12 @@
 [versions]
-agp = "8.7.2"
+agp = "8.9.3"
 android = "11.11.0"
 cloudinaryAndroid = "3.0.2"
 coilCompose = "2.4.0"
+firebaseBom = "33.14.0"
+kotlin = "2.0.21"
 dotenvKotlin = "6.5.1"
 dotlottieAndroid = "0.4.1"
-firebaseBom = "33.13.0"
-kotlin = "2.0.10"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 playServicesLocation = "21.3.0"
@@ -15,10 +15,13 @@ espressoCore = "3.6.1"
 kotlinxCoroutinesPlayServices = "1.7.3"
 lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
-composeBom = "2024.10.01"
+composeBom = "2025.05.01"
 mapsCompose = "11.11.0"
 roomRuntimeAndroid = "2.7.1"
 material = "1.8.2"
+googleGmsGoogleServices = "4.4.2"
+firebaseMessaging = "24.1.1"
+appcompat = "1.7.0"
 
 [libraries]
 android = { module = "com.mapbox.maps:android", version.ref = "android" }
@@ -34,6 +37,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
 firebase-firestore-ktx = { module = "com.google.firebase:firebase-firestore-ktx" }
 firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx" }
+google-firebase-auth = { module = "com.google.firebase:firebase-auth" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -51,9 +55,12 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 maps-compose = { module = "com.mapbox.extension:maps-compose", version.ref = "mapsCompose" }
 androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 
