@@ -173,8 +173,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
 
                             mapboxMap.addOnMapClickListener { point ->
-                                addPin(point)
-                                true
+                                val currentZoom = mapboxMap.cameraState.zoom
+
+                                if (currentZoom >= 12.0) {
+                                    addPin(point)
+                                    true
+                                } else {
+                                    false
+                                }
                             }
 
                             pointAnnotationManager?.addClickListener { annotation ->
@@ -314,14 +320,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun addPin(point: Point) {
-        val context = this
-        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-
-        val annotationOptions = PointAnnotationOptions()
-            .withPoint(point)
-            .withIconImage(bitmap)
-            .withIconSize(0.1)
-        pointAnnotationManager?.create(annotationOptions)
+//        val context = this
+//        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+//
+//        val annotationOptions = PointAnnotationOptions()
+//            .withPoint(point)
+//            .withIconImage(bitmap)
+//            .withIconSize(0.1)
+//        pointAnnotationManager?.create(annotationOptions)
 
         SimpleClustering.addClusterPin(point)
     }

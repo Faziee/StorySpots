@@ -83,7 +83,7 @@ class SimpleClustering {
                 val source = GeoJsonSource.Builder(SOURCE_ID)
                     .data(emptyGeoJson)
                     .cluster(true)
-                    .clusterMaxZoom(14)
+                    .clusterMaxZoom(16)
                     .clusterRadius(50)
                     .build()
 
