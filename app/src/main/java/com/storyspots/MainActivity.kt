@@ -31,7 +31,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
-import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxExperimental
@@ -49,6 +48,8 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListene
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.storyspots.ui.components.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.geojson.Point
+import com.storyspots.pin.SimpleClustering
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -91,7 +92,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun initializeContent() {
+    fun initializeContent() {
         contentInitialized = true
         setContent {
             MaterialTheme {
@@ -168,6 +169,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             val annotationApi = annotations
                             pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
+                            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+                            SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
+
                             mapboxMap.addOnMapClickListener { point ->
                                 addPin(point)
                                 true
@@ -181,7 +185,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                     }
                 }
             )
-            
+
             selectedPin.value?.let { pin ->
                 pinScreenOffset.value?.let { offset ->
                     DismissibleStoryStack(
@@ -192,7 +196,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
         }
     }
-            
+
     private fun handleNavItemClick(item: NavItem) {
         when (item) {
             NavItem.Home -> {
@@ -318,5 +322,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             .withIconImage(bitmap)
             .withIconSize(0.1)
         pointAnnotationManager?.create(annotationOptions)
+
+        SimpleClustering.addClusterPin(point)
     }
 }
