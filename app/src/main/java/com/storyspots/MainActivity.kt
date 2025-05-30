@@ -177,7 +177,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
                                 if (currentZoom >= 12.0) {
                                     addPin(point)
-                                    true
+                                    false
                                 } else {
                                     false
                                 }
@@ -320,15 +320,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun addPin(point: Point) {
-//        val context = this
-//        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-//
-//        val annotationOptions = PointAnnotationOptions()
-//            .withPoint(point)
-//            .withIconImage(bitmap)
-//            .withIconSize(0.1)
-//        pointAnnotationManager?.create(annotationOptions)
-
         SimpleClustering.addClusterPin(point)
     }
 }
