@@ -40,15 +40,15 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
-import com.storyspots.ui.components.DismissibleStoryStack
+import com.storyspots.caption.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.geojson.Point
+import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 
 @OptIn(MapboxExperimental::class)
@@ -134,7 +134,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         //This and (NAVIGATE TO LN 157) will be replaced by navbar later
         val showFeed = remember { mutableStateOf(false) }
 
-        //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
 
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
@@ -172,12 +171,19 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
                             SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
 
+                            ClusterZoomHandler.setupClusterClickHandler(this@apply, "clustering-pins")
+
+                            SimpleClustering.setOnPinClickListener { point ->
+                                Log.d("MainActivity", "Pin clicked at: $point")
+                                selectedPin.value = point
+                            }
+
                             mapboxMap.addOnMapClickListener { point ->
                                 val currentZoom = mapboxMap.cameraState.zoom
 
                                 if (currentZoom >= 12.0) {
                                     addPin(point)
-                                    false
+                                    false  // Don't consume so cluster clicks can work
                                 } else {
                                     false
                                 }
