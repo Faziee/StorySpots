@@ -14,5 +14,9 @@
     <string name="register_redirect">Not a user yet? Register now!</string>
     <string name="register_summary">Sign up to experience the magic of StorySpots!</string>
     <string name="login_redirect">Already a user? Log in!</string>
+    <string name="password_requirements">Password must contain:\n• At least 6 characters\n• One uppercase letter\n• One special character</string>
+    <string name="length_hint">• At least 6 characters</string>
+    <string name="uppercase_hint">• One uppercase letter</string>
+    <string name="special_hint">• One special character</string>
 
 </resources>
