@@ -58,6 +58,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation (libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.room.runtime.android)
+    implementation(libs.firebase.messaging)
+    implementation(libs.androidx.appcompat)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -87,6 +89,10 @@ dependencies {
 
     //-----SERVICES: LOCATION-----
     implementation("com.google.android.gms:play-services-location:21.1.0")
+
+    //Login dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
     //-----SERVICES: LOTTIE------
     implementation(libs.dotlottie.android)
