@@ -15,6 +15,9 @@ import com.mapbox.maps.extension.style.sources.getSource
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.RenderedQueryGeometry
+import com.mapbox.maps.RenderedQueryOptions
+import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 
 class SimpleClustering {
 
@@ -24,6 +27,7 @@ class SimpleClustering {
         private val pinData = mutableListOf<PinData>()
         private const val SOURCE_ID = "clustering-pins"
         private var isInitialized = false
+        private var onPinClickListener: ((Point) -> Unit)? = null
 
         fun setupClustering(mapView: MapView, pointAnnotationManager: PointAnnotationManager, pinBitmap: Bitmap) {
             Log.d(TAG, "Setting up clustering...")
@@ -45,6 +49,10 @@ class SimpleClustering {
             pinData.add(PinData(point, feature, null))
             Log.d(TAG, "Total pins: ${pinData.size}")
             instance?.updateData()
+        }
+
+        fun setOnPinClickListener(listener: (Point) -> Unit) {
+            onPinClickListener = listener
         }
     }
 
@@ -122,6 +130,7 @@ class SimpleClustering {
                 Log.d(TAG, "Pin bitmap added to style")
 
                 ClusterZoomHandler.setupClusterClickHandler(mapView, SOURCE_ID)
+                setupPinClickListener(mapView)
 
                 isInitialized = true
                 Log.d(TAG, "Clustering initialization complete!")
@@ -129,6 +138,29 @@ class SimpleClustering {
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing clustering", e)
             }
+        }
+    }
+
+    private fun setupPinClickListener(mapView: MapView) {
+        Log.d(TAG, "Setting up pin click listener")
+
+        mapView.mapboxMap.addOnMapClickListener { point ->
+            Log.d(TAG, "Map clicked, checking for pin...")
+
+            val screenCoordinate = mapView.mapboxMap.pixelForCoordinate(point)
+
+            mapView.mapboxMap.queryRenderedFeatures(
+                RenderedQueryGeometry(screenCoordinate),
+                RenderedQueryOptions(listOf("unclustered-pins"), null)
+            ) { result ->
+                if (!result.value.isNullOrEmpty()) {
+                    Log.d(TAG, "Individual pin clicked at: $point")
+                    onPinClickListener?.invoke(point)
+                } else {
+                    Log.d(TAG, "No pin found at click location")
+                }
+            }
+            false
         }
     }
 
@@ -143,7 +175,6 @@ class SimpleClustering {
             try {
                 val source = style.getSource(SOURCE_ID) as? GeoJsonSource
                 if (source != null) {
-                    // Create GeoJSON manually
                     val features = pinData.map { pinData ->
                         val point = pinData.point
                         """
