@@ -4,4 +4,15 @@
     <string name="notifications">Notifications</string>
     <string name="settings">Settings</string>
     <string name="create_post">Create</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="log_in">Log In</string>
+    <string name="logo">Logo</string>
+    <string name="login_summary">Log in to your account to continue capturing moments!</string>
+    <string name="register_redirect">Not a user yet? Register now!</string>
+    <string name="register_summary">Sign up to experience the magic of StorySpots!</string>
+    <string name="login_redirect">Already a user? Log in!</string>
+
 </resources>

@@ -2,4 +2,7 @@
 <resources>
 
     <style name="Theme.StorySpots" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.LoginActivityTheme" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.RegisterActivityTheme" parent="Theme.AppCompat.Light.NoActionBar" />
+
 </resources>
