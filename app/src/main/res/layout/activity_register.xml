@@ -71,6 +71,35 @@
             android:inputType="textPassword"
             android:textColor="@android:color/black"
             android:textColorHint="@color/hint_grey" />
+        <LinearLayout
+            android:id="@+id/password_hint_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/hint_length"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/length_hint"
+                android:textColor="@color/error_colour" />
+
+            <TextView
+                android:id="@+id/hint_upper"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/uppercase_hint"
+                android:textColor="@color/error_colour" />
+
+            <TextView
+                android:id="@+id/hint_special"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/special_hint"
+                android:textColor="@color/error_colour" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/btn_register"

@@ -9,5 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="authentication">#FF9CC7</color>
     <color name="hint_grey">#575764</color>
-
+    <color name="error_colour">#a50001</color>
+    <color name="success_green">#4CBB17</color>
 </resources>
