@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -50,7 +51,7 @@ fun PostStoryScreen(
 
         Text(
             text = "Share Your Story",
-            style = MaterialTheme.typography.headlineMedium.copy(
+            style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             ),
@@ -59,9 +60,11 @@ fun PostStoryScreen(
 
         Box(
             modifier = Modifier
+                .shadow(4.dp, RoundedCornerShape(8.dp), clip = false)
+                .background(Color.White, shape = RoundedCornerShape(8.dp))
+                .border(1.dp, brightPink, RoundedCornerShape(8.dp))
                 .fillMaxWidth()
                 .height(180.dp)
-                .border(0.7.dp, brightPink, RoundedCornerShape(8.dp))
         ) {
             if (selectedImageUri != null) {
                 Image(
@@ -94,7 +97,8 @@ fun PostStoryScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(0.7.dp, brightPink, RoundedCornerShape(8.dp))
+                .shadow(4.dp, RoundedCornerShape(8.dp))
+                .border(1.dp, brightPink, RoundedCornerShape(8.dp))
         ) {
             TextField(
                 value = title,
@@ -115,7 +119,8 @@ fun PostStoryScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(0.7.dp, brightPink, RoundedCornerShape(8.dp))
+                .shadow(4.dp, RoundedCornerShape(8.dp))
+                .border(1.dp, brightPink, RoundedCornerShape(8.dp))
         ) {
             TextField(
                 value = description,
