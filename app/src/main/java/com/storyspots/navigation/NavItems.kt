@@ -11,5 +11,5 @@ sealed class NavItem(
     object Favourites : NavItem("Favourites", R.drawable.ic_favourites, "favourites")
     object Notifications : NavItem("Notifications", R.drawable.ic_notifications, "notifications")
     object Settings : NavItem("Settings", R.drawable.ic_settings, "settings")
-    object CreatePost : NavItem("", R.drawable.ic_post, "create_post")
+    object CreatePost : NavItem("Post", R.drawable.ic_post, "create_post")
 }
