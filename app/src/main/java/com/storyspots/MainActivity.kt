@@ -49,6 +49,7 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListene
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.storyspots.ui.components.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.storyspots.post.PostStoryScreen
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -113,6 +114,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         when {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
+                            currentScreen == "create" -> PostStoryScreen(
+                                onImageSelect = {},
+                                onPostClick = { _, _, _ -> {}
+                                }
+                            )
                             else -> MapScreen()
                         }
                     }
