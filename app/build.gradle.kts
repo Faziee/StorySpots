@@ -65,6 +65,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
     //-----NEW DEPENDENCIES FOR FIREBASE-------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
@@ -79,9 +80,6 @@ dependencies {
     // MapBox
     implementation(libs.android)
     implementation(libs.maps.compose)
-
-    //Coil Dependency
-    implementation("io.coil-kt:coil-compose:2.2.2")
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")
