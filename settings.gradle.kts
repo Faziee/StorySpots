@@ -8,6 +8,9 @@ pluginManagement {
             }
         }
         mavenCentral()
+        maven {
+            url = uri("https://jitpack.io")
+        }
         gradlePluginPortal()
     }
 }
@@ -23,7 +26,7 @@ dependencyResolutionManagement {
                 username = "mapbox"
                 password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN").orNull
             }
-
+            url = uri("https://jitpack.io")
         }
     }
 }

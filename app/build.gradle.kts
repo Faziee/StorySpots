@@ -65,25 +65,29 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    //-----NEW DEPENDENCIES FOR FIREBASE-------
+    implementation(libs.dotenv.kotlin)
+
+    //-----SERVICES: FIREBASE-------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-
-    // TODO: Add the dependencies for any other Firebase products you want to use
-    // See https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.firebase.firestore.ktx)
-    
-    // MapBox
+
+    //-----SERVICES: CLOUDINARY-----
+    implementation(libs.cloudinary.android)
+
+    //-----SERVICES: MAPBOX-------
     implementation(libs.android)
     implementation(libs.maps.compose)
 
-    //Coil Dependency
+    //-----SERVICES: COIL---------
     implementation("io.coil-kt:coil-compose:2.2.2")
 
-    // Location
+    //-----SERVICES: LOCATION-----
     implementation("com.google.android.gms:play-services-location:21.1.0")
 
+    //-----SERVICES: LOTTIE------
+    implementation(libs.dotlottie.android)
 }
