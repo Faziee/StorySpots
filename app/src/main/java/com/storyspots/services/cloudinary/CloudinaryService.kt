@@ -2,75 +2,71 @@ package com.storyspots.services.cloudinary
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
-import androidx.compose.runtime.Composable
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-import io.github.cdimascio.dotenv.dotenv
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 
-class CloudinaryService()
-{
-    private lateinit var observer: CloudinaryLifecycleObserver
-    private lateinit var urlText: TextView
-    private lateinit var context: Context
+class CloudinaryService(private val context: Context) {
 
-    fun onCreate(context: Context)
-    {
-        this.context = context
+    sealed class UploadState {
+        object Idle : UploadState()
+        object Loading : UploadState()
+        data class Progress(val bytes: Long, val totalBytes: Long) : UploadState()
+        data class Success(val url: String) : UploadState()
+        data class Error(val message: String) : UploadState()
+    }
 
+    private val _uploadState = Channel<UploadState>()
+    val uploadState = _uploadState.receiveAsFlow()
+
+    init {
+        initializeCloudinary()
+    }
+
+    private fun initializeCloudinary() {
         val config = HashMap<String, String>()
-        val dotenv = dotenv {
-            directory = "assets"
-            filename = "env"
-        }
 
-        config["cloud_name"] = dotenv["CLOUD_NAME"]
-        config["api-key"] = dotenv["API_KEY"]
-        config["api-secret"] = dotenv["API_SECRET"]
+        config["cloud_name"] = "dviaaly3l"
+        config["api_key"] = "478996327969175"
+        config["api_secret"] = "3zb2ocMQWoRzLX2-QykpkZ-x06M"
 
-        MediaManager.init(this.context, config)
-//        progressBar = findViewById(R.id.progressBar)
-
-        this.observer = CloudinaryLifecycleObserver(requireActivity().activityResultRegistry)
-        lifecycle.addObserver(this.observer)
+        MediaManager.init(context, config)
     }
 
-    fun onViewCreated(selectButton: Button)
-    {
-        selectButton.setOnClickListener {
-            this.observer.pickImage()
+    fun uploadImageToCloudinary(uri: Uri?) {
+        if (uri == null) {
+            _uploadState.trySend(UploadState.Error("Invalid image URI"))
+            return
         }
-    }
 
-    fun uploadImageToCloudinary(uri: Uri?, context: Context = this.context)
-    {
         MediaManager.get().upload(uri)
             .callback(object : UploadCallback {
                 override fun onStart(requestId: String?) {
-//                    progressBar.isVisible = true
+                    _uploadState.trySend(UploadState.Loading)
                 }
 
                 override fun onProgress(requestId: String?, bytes: Long, totalBytes: Long) {
-                    //in progress
+                    _uploadState.trySend(UploadState.Progress(bytes, totalBytes))
                 }
 
                 override fun onSuccess(requestId: String?, resultData: MutableMap<Any?, Any?>?) {
-                    Toast.makeText(context, "Image Uploaded", Toast.LENGTH_SHORT).show()
-//                    urlText.text = resultData!!["url"] as String?
-//                    progressBar.isVisible = false
-//                    urlText.isVisible = true
+                    val url = resultData?.get("url") as? String
+                    if (url != null) {
+                        _uploadState.trySend(UploadState.Success(url))
+                    } else {
+                        _uploadState.trySend(UploadState.Error("Failed to get image URL"))
+                    }
                 }
 
                 override fun onError(requestId: String?, error: ErrorInfo?) {
-//                    progressBar.isVisible = false
-                    Toast.makeText(context, "Upload Error: ${error?.description}", Toast.LENGTH_LONG).show()
+                    val errorMessage = error?.description ?: "Unknown upload error"
+                    _uploadState.trySend(UploadState.Error(errorMessage))
                 }
 
                 override fun onReschedule(requestId: String?, error: ErrorInfo?) {
-                    //reschedule
+                    // Handle reschedule if needed
                 }
             })
             .dispatch()
