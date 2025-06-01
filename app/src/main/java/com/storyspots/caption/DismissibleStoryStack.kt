@@ -1,23 +1,21 @@
 // file: ui/components/DismissibleStoryStack.kt
-package com.storyspots.ui.components
+package com.storyspots.caption
 
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.zIndex
-import com.storyspots.caption.StoryStack
 
 @Composable
 fun DismissibleStoryStack(
     offset: Offset,
     onDismiss: () -> Unit
 ) {
-    var storyStackBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var storyStackBounds by remember { mutableStateOf<Rect?>(null) }
 
     Box(
         modifier = Modifier
