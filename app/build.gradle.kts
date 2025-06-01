@@ -5,6 +5,8 @@ plugins {
     id("kotlin-android")
     id("com.google.relay") version "0.3.12"
     id("com.google.gms.google-services") version "4.4.2"
+    id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -43,7 +45,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -62,6 +63,10 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation (libs.material)
     implementation (libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.compose.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,29 +74,35 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    //-----NEW DEPENDENCIES FOR FIREBASE-------
+    implementation(libs.dotenv.kotlin)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+
+    //-----SERVICES: FIREBASE-------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-
-    // TODO: Add the dependencies for any other Firebase products you want to use
-    // See https://firebase.google.com/docs/android/setup#available-libraries
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.firebase.firestore.ktx)
-    
-    // MapBox
+
+    //-----SERVICES: CLOUDINARY-----
+    implementation(libs.cloudinary.android)
+
+    //-----SERVICES: MAPBOX-------
     implementation(libs.android)
     implementation(libs.maps.compose)
 
-    //Coil Dependency
+    //-----SERVICES: COIL---------
     implementation(libs.coil.compose.v222)
 
-    // Location
+    //-----SERVICES: LOCATION-----
     implementation(libs.play.services.location.v2110)
 
     //Login dependencies
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
 
+    //-----SERVICES: LOTTIE------
+    implementation(libs.dotlottie.android)
 }
