@@ -5,6 +5,8 @@ plugins {
     id("kotlin-android")
     id("com.google.relay") version "0.3.12"
     id("com.google.gms.google-services") version "4.4.2"
+    id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -43,7 +45,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -62,6 +63,10 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation (libs.material)
     implementation (libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.compose.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,6 +75,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.dotenv.kotlin)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 
     //-----SERVICES: FIREBASE-------
     implementation(platform(libs.firebase.bom))

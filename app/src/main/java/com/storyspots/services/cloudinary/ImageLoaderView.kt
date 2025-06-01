@@ -8,7 +8,7 @@ import com.dotlottie.dlplayer.Mode
 import com.lottiefiles.dotlottie.core.compose.ui.DotLottieAnimation
 import com.lottiefiles.dotlottie.core.util.DotLottieSource
 
-class ImageLoaderView
+class ImageLoaderView()
 {
     @Composable
     fun DisplayProgressBar()
@@ -19,7 +19,7 @@ class ImageLoaderView
             loop = true,
             speed = 3f,
             useFrameInterpolation = false,
-            playMode = Mode.Forward,
+            playMode = Mode.FORWARD,
             modifier = Modifier.background(Color.Transparent)
         )
     }
