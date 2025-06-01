@@ -3,6 +3,7 @@ package com.storyspots
 import BottomNavBar
 import NavItem
 import NotificationFeedScreen
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
@@ -54,44 +55,51 @@ import com.mapbox.maps.plugin.locationcomponent.location
 class MainActivity : ComponentActivity(), PermissionsListener {
 
     private val TAG = "MainActivity"
-    private lateinit var permissionsManager: PermissionsManager
-    private val locationPermissionGranted = mutableStateOf(false)
+
+//    //TODO: Permissions Management
+//    private lateinit var permissionsManager: PermissionsManager
+//    private val locationPermissionGranted = mutableStateOf(false)
 
     private lateinit var mapView: MapView
     private var currentScreen by mutableStateOf("home")
 
-    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
-        centerMapOnUserLocation(mapView, point)
-    }
+//    //TODO: Re-centering issue source?
+//    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
+//        centerMapOnUserLocation(mapView, point)
+//    }
+//
+//    //TODO: Re-centering issue source?
+//    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
+//        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
+//    }
 
-    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
-        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
-    }
-
-    private var pointAnnotationManager: PointAnnotationManager? = null
+//    //TODO: Map pinning
+//    private var pointAnnotationManager: PointAnnotationManager? = null
     private var contentInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Context context = getContext()                                                              //NEW::For tracking activity context
 
-        FirebaseApp.initializeApp(this)
-        FirebaseFirestore.getInstance().firestoreSettings =
-            FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(true)
-                .build()
-
-        // checking permissions
-        if (PermissionsManager.areLocationPermissionsGranted(this)) {
-            Log.d(TAG, "Location permission already granted")
-            locationPermissionGranted.value = true
-            initializeContent()
-        } else {
-            permissionsManager = PermissionsManager(this)
-            permissionsManager.requestLocationPermissions(this)
-        }
+//        //TODO: Database
+//        FirebaseApp.initializeApp(this)
+//        FirebaseFirestore.getInstance().firestoreSettings =
+//            FirebaseFirestoreSettings.Builder()
+//                .setPersistenceEnabled(true)
+//                .build()
+//
+//        //TODO: Permissions Management
+//        if (PermissionsManager.areLocationPermissionsGranted(this)) {
+//            Log.d(TAG, "Location permission already granted")
+//            locationPermissionGranted.value = true
+//            initializeContent()
+//        } else {
+//            permissionsManager = PermissionsManager(this)
+//            permissionsManager.requestLocationPermissions(this)
+//        }
     }
 
-    private fun initializeContent() {
+    fun initializeContent() {
         contentInitialized = true
         setContent {
             MaterialTheme {
@@ -121,23 +129,20 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    @Composable
-    fun PermissionRequestScreen() {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Requesting location permissions...")
-        }
-    }
+//    //TODO: Permissions Management
+//    @Composable
+//    fun PermissionRequestScreen() {
+//        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//            Text("Requesting location permissions...")
+//        }
+//    }
 
     @Composable
     fun MapScreen() {
-        //This and (NAVIGATE TO LN 157) will be replaced by navbar later
-        val showFeed = remember { mutableStateOf(false) }
-
-        //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
-
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
 
+        //UI. Can remain in Main
         LaunchedEffect(selectedPin.value) {
             selectedPin.value?.let { pin ->
                 val screenCoords = mapView.getMapboxMap().pixelForCoordinate(pin)
@@ -145,6 +150,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
         }
 
+        //UI. Can remain in Main
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -192,7 +198,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
         }
     }
-            
+
+    //TODO: Navigation Logic
     private fun handleNavItemClick(item: NavItem) {
         when (item) {
             NavItem.Home -> {
@@ -220,103 +227,111 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//    //TODO: Permissions Management
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<String>,
+//        grantResults: IntArray
+//    ) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//    }
+//
+//    //TODO: Permissions Management
+//    override fun onExplanationNeeded(permissionsToExplain: List<String>) {
+//        Toast.makeText(
+//            this,
+//            "This app needs location permission to show your location on the map.",
+//            Toast.LENGTH_LONG
+//        ).show()
+//    }
+
+//    //TODO: Permissions Management
+//    override fun onPermissionResult(granted: Boolean) {
+//        locationPermissionGranted.value = granted
+//
+//        if (granted) {
+//            Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
+//            mapView.getMapboxMap().getStyle { style ->
+//                enableLocationComponent(mapView)
+//            }
+//            if (!contentInitialized) {
+//                initializeContent()
+//            } else if (::mapView.isInitialized) {
+//                mapView.getMapboxMap().getStyle { style ->
+//                    enableLocationComponent(mapView)
+//                }
+//            }
+//        } else {
+//            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
+//            locationPermissionGranted.value = false
+//            if (!contentInitialized) {
+//                initializeContent()
+//            }
+//        }
+//    }
+
+//    //TODO: Permissions Management
+//    private fun enableLocationComponent(mapView: MapView) {
+//        mapView.location.updateSettings {
+//            enabled = true
+//            puckBearingEnabled = true
+//            puckBearing = PuckBearing.COURSE
+//            locationPuck = LocationPuck2D()
+//
+//            pulsingEnabled = true
+//            pulsingColor = Color.BLUE
+//            pulsingMaxRadius = 40f
+//            showAccuracyRing = true
+//            accuracyRingColor = Color.parseColor("#4d89cff0")
+//            accuracyRingBorderColor = Color.parseColor("#80ffffff")
+//        }
+
+//        //TODO: Map Re-centering issue source?
+//        mapView.location.addOnIndicatorPositionChangedListener { point ->
+//            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
+//                mapView.camera.easeTo(
+//                    CameraOptions.Builder()
+//                        .center(point)
+//                        .zoom(15.0)
+//                        .build(),
+//                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
+//                )
+//            }
+//        }
     }
 
-    override fun onExplanationNeeded(permissionsToExplain: List<String>) {
-        Toast.makeText(
-            this,
-            "This app needs location permission to show your location on the map.",
-            Toast.LENGTH_LONG
-        ).show()
-    }
+//    //TODO: Map Control
+//    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
+//        mapView.camera.easeTo(
+//            CameraOptions.Builder()
+//                .center(point)
+//                .zoom(15.0)
+//                .build(),
+//            MapAnimationOptions.mapAnimationOptions {
+//                duration(1000)
+//            }
+//        )
+//    }
+//
+//    //TODO: Map Control
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        if (::mapView.isInitialized) {
+//            mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
+//            mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+//        }
+//    }
 
-    override fun onPermissionResult(granted: Boolean) {
-        locationPermissionGranted.value = granted
-
-        if (granted) {
-            Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
-            mapView.getMapboxMap().getStyle { style ->
-                enableLocationComponent(mapView)
-            }
-            if (!contentInitialized) {
-                initializeContent()
-            } else if (::mapView.isInitialized) {
-                mapView.getMapboxMap().getStyle { style ->
-                    enableLocationComponent(mapView)
-                }
-            }
-        } else {
-            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
-            locationPermissionGranted.value = false
-            if (!contentInitialized) {
-                initializeContent()
-            }
-        }
-    }
-
-    private fun enableLocationComponent(mapView: MapView) {
-        mapView.location.updateSettings {
-            enabled = true
-            puckBearingEnabled = true
-            puckBearing = PuckBearing.COURSE
-            locationPuck = LocationPuck2D()
-
-            pulsingEnabled = true
-            pulsingColor = Color.BLUE
-            pulsingMaxRadius = 40f
-            showAccuracyRing = true
-            accuracyRingColor = Color.parseColor("#4d89cff0")
-            accuracyRingBorderColor = Color.parseColor("#80ffffff")
-        }
-
-        mapView.location.addOnIndicatorPositionChangedListener { point ->
-            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
-                mapView.camera.easeTo(
-                    CameraOptions.Builder()
-                        .center(point)
-                        .zoom(15.0)
-                        .build(),
-                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
-                )
-            }
-        }
-    }
-
-    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
-        mapView.camera.easeTo(
-            CameraOptions.Builder()
-                .center(point)
-                .zoom(15.0)
-                .build(),
-            MapAnimationOptions.mapAnimationOptions {
-                duration(1000)
-            }
-        )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::mapView.isInitialized) {
-            mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-            mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
-        }
-    }
-
-    private fun addPin(point: Point) {
-        val context = this
-        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-
-        val annotationOptions = PointAnnotationOptions()
-            .withPoint(point)
-            .withIconImage(bitmap)
-            .withIconSize(0.1)
-        pointAnnotationManager?.create(annotationOptions)
-    }
+//    //TODO: Map pinning
+//    private fun addPin(point: Point) {
+//        val context = this
+//        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+//
+//        val annotationOptions = PointAnnotationOptions()
+//            .withPoint(point)
+//            .withIconImage(bitmap)
+//            .withIconSize(0.1)
+//        pointAnnotationManager?.create(annotationOptions)
+//    }
 }
