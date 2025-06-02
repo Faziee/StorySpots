@@ -31,7 +31,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
-import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxExperimental
@@ -41,15 +40,16 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
-import com.storyspots.ui.components.DismissibleStoryStack
+import com.storyspots.caption.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.storyspots.post.PostStoryScreen
+import com.mapbox.geojson.Point
+import com.storyspots.pin.ClusterZoomHandler
+import com.storyspots.pin.SimpleClustering
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    private fun initializeContent() {
+    fun initializeContent() {
         contentInitialized = true
         setContent {
             MaterialTheme {
@@ -114,11 +114,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         when {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
-                            currentScreen == "create" -> PostStoryScreen(
-                                onImageSelect = {},
-                                onPostClick = { _, _, _ -> {}
-                                }
-                            )
                             else -> MapScreen()
                         }
                     }
@@ -139,7 +134,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         //This and (NAVIGATE TO LN 157) will be replaced by navbar later
         val showFeed = remember { mutableStateOf(false) }
 
-        //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
 
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
@@ -174,9 +168,25 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             val annotationApi = annotations
                             pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
+                            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+                            SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
+
+                            ClusterZoomHandler.setupClusterClickHandler(this@apply, "clustering-pins")
+
+                            SimpleClustering.setOnPinClickListener { point ->
+                                Log.d("MainActivity", "Pin clicked at: $point")
+                                selectedPin.value = point
+                            }
+
                             mapboxMap.addOnMapClickListener { point ->
-                                addPin(point)
-                                true
+                                val currentZoom = mapboxMap.cameraState.zoom
+
+                                if (currentZoom >= 12.0) {
+                                    addPin(point)
+                                    false  // Don't consume so cluster clicks can work
+                                } else {
+                                    false
+                                }
                             }
 
                             pointAnnotationManager?.addClickListener { annotation ->
@@ -187,7 +197,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                     }
                 }
             )
-            
+
             selectedPin.value?.let { pin ->
                 pinScreenOffset.value?.let { offset ->
                     DismissibleStoryStack(
@@ -198,7 +208,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
         }
     }
-            
+
     private fun handleNavItemClick(item: NavItem) {
         when (item) {
             NavItem.Home -> {
@@ -316,13 +326,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun addPin(point: Point) {
-        val context = this
-        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-
-        val annotationOptions = PointAnnotationOptions()
-            .withPoint(point)
-            .withIconImage(bitmap)
-            .withIconSize(0.1)
-        pointAnnotationManager?.create(annotationOptions)
+        SimpleClustering.addClusterPin(point)
     }
 }

@@ -44,7 +44,7 @@ android {
 
 dependencies {
 
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -58,6 +58,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation (libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.room.runtime.android)
+    implementation(libs.firebase.messaging)
+    implementation(libs.androidx.appcompat)
+    implementation (libs.material)
+    implementation (libs.androidx.core.splashscreen)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -65,7 +69,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
     //-----NEW DEPENDENCIES FOR FIREBASE-------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
@@ -81,7 +84,14 @@ dependencies {
     implementation(libs.android)
     implementation(libs.maps.compose)
 
+    //Coil Dependency
+    implementation(libs.coil.compose.v222)
+
     // Location
-    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation(libs.play.services.location.v2110)
+
+    //Login dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
 }
