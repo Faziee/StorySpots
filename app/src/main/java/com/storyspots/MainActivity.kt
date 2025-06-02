@@ -5,11 +5,14 @@ import NavItem
 import NotificationFeedScreen
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -25,12 +28,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.GeoPoint
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
+import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxExperimental
@@ -40,16 +46,15 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
+import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
-import com.storyspots.caption.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.mapbox.geojson.Point
-import com.storyspots.pin.ClusterZoomHandler
-import com.storyspots.pin.SimpleClustering
+import com.storyspots.caption.DismissibleStoryStack
+import com.storyspots.post.PostStoryScreen
 
 
 @OptIn(MapboxExperimental::class)
@@ -61,8 +66,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private lateinit var mapView: MapView
     private var currentScreen by mutableStateOf("home")
+    private var selectedImageUri by mutableStateOf<Uri?>(null)
+    private var currentUserLocation by mutableStateOf<Point?>(null)
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
+        currentUserLocation = point
         centerMapOnUserLocation(mapView, point)
     }
 
@@ -93,10 +101,17 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
-    fun initializeContent() {
+    private fun initializeContent() {
         contentInitialized = true
         setContent {
             MaterialTheme {
+                // Image picker launcher
+                val imagePickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri ->
+                    selectedImageUri = uri
+                }
+
                 Scaffold(
                     bottomBar = {
                         BottomNavBar(
@@ -115,12 +130,43 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         when {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
+                            currentScreen == "create" -> {
+                                PostStoryScreen(
+                                    onImageSelect = {
+                                        imagePickerLauncher.launch("image/*")
+                                    },
+                                    selectedImageUri = selectedImageUri,
+                                    onPostSuccess = {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Story posted successfully!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        // Clear the selected image and go back to home
+                                        selectedImageUri = null
+                                        currentScreen = "home"
+                                    },
+                                    location = getCurrentLocation()
+                                )
+                            }
                             else -> MapScreen()
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun getCurrentLocation(): GeoPoint? {
+        return currentUserLocation?.let { point ->
+            GeoPoint(point.latitude(), point.longitude())
+        }
+    }
+
+    private fun getCurrentUserId(): String? {
+        // TODO: Replace with your actual user authentication system
+        // For now, returning a placeholder
+        return "user_${System.currentTimeMillis()}"
     }
 
     @Composable
@@ -135,6 +181,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         //This and (NAVIGATE TO LN 157) will be replaced by navbar later
         val showFeed = remember { mutableStateOf(false) }
 
+        //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
 
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
@@ -187,25 +234,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             val annotationApi = annotations
                             pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
-                            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-                            SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
-
-                            ClusterZoomHandler.setupClusterClickHandler(this@apply, "clustering-pins")
-
-                            SimpleClustering.setOnPinClickListener { point ->
-                                Log.d("MainActivity", "Pin clicked at: $point")
-                                selectedPin.value = point
-                            }
-
                             mapboxMap.addOnMapClickListener { point ->
-                                val currentZoom = mapboxMap.cameraState.zoom
-
-                                if (currentZoom >= 12.0) {
-                                    addPin(point)
-                                    false  // Don't consume so cluster clicks can work
-                                } else {
-                                    false
-                                }
+                                addPin(point)
+                                true
                             }
 
                             pointAnnotationManager?.addClickListener { annotation ->
@@ -345,6 +376,13 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun addPin(point: Point) {
-        SimpleClustering.addClusterPin(point)
+        val context = this
+        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+
+        val annotationOptions = PointAnnotationOptions()
+            .withPoint(point)
+            .withIconImage(bitmap)
+            .withIconSize(0.1)
+        pointAnnotationManager?.create(annotationOptions)
     }
 }
