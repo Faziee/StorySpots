@@ -3,9 +3,12 @@ package com.storyspots
 import BottomNavBar
 import NavItem
 import NotificationFeedScreen
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -30,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
@@ -67,6 +71,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     private var currentScreen by mutableStateOf("home")
     private var selectedImageUri by mutableStateOf<Uri?>(null)
     private var currentUserLocation by mutableStateOf<Point?>(null)
+    private var pendingImageSelection by mutableStateOf(false)
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
         currentUserLocation = point
@@ -104,11 +109,34 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         contentInitialized = true
         setContent {
             MaterialTheme {
+                // Permission launcher for media access
+                val mediaPermissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { isGranted ->
+                    if (isGranted) {
+                        // Permission granted, launch image picker
+                        Toast.makeText(this@MainActivity, "Permission granted! Select your image.", Toast.LENGTH_SHORT).show()
+                        pendingImageSelection = true
+                    } else {
+                        // Permission denied
+                        Toast.makeText(this@MainActivity, "Permission denied. Cannot access photos.", Toast.LENGTH_LONG).show()
+                        pendingImageSelection = false
+                    }
+                }
+
                 // Image picker launcher
                 val imagePickerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.GetContent()
                 ) { uri ->
                     selectedImageUri = uri
+                    pendingImageSelection = false
+                }
+
+                // Auto-launch image picker when permission is granted
+                LaunchedEffect(pendingImageSelection) {
+                    if (pendingImageSelection) {
+                        imagePickerLauncher.launch("image/*")
+                    }
                 }
 
                 Scaffold(
@@ -132,7 +160,23 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             currentScreen == "create" -> {
                                 PostStoryScreen(
                                     onImageSelect = {
-                                        imagePickerLauncher.launch("image/*")
+                                        // Check permission before opening gallery
+                                        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            Manifest.permission.READ_MEDIA_IMAGES
+                                        } else {
+                                            Manifest.permission.READ_EXTERNAL_STORAGE
+                                        }
+
+                                        when (PackageManager.PERMISSION_GRANTED) {
+                                            ContextCompat.checkSelfPermission(this@MainActivity, permission) -> {
+                                                // Permission already granted, open gallery
+                                                imagePickerLauncher.launch("image/*")
+                                            }
+                                            else -> {
+                                                // Request permission
+                                                mediaPermissionLauncher.launch(permission)
+                                            }
+                                        }
                                     },
                                     selectedImageUri = selectedImageUri,
                                     onPostSuccess = {
@@ -160,12 +204,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         return currentUserLocation?.let { point ->
             GeoPoint(point.latitude(), point.longitude())
         }
-    }
-
-    private fun getCurrentUserId(): String? {
-        // TODO: Replace with your actual user authentication system
-        // For now, returning a placeholder
-        return "user_${System.currentTimeMillis()}"
     }
 
     @Composable
