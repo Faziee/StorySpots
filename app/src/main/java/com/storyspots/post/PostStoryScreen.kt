@@ -17,27 +17,51 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.firestore.GeoPoint
 import com.storyspots.R
+import com.storyspots.services.post.PostStoryHandler
+
+//import com.storyspots.services.post.PostStoryHandler
 
 @Composable
 fun PostStoryScreen(
     onImageSelect: () -> Unit,
-    onPostClick: (String, String, Uri?) -> Unit,
-    modifier: Modifier = Modifier
+    selectedImageUri: Uri? = null,
+    onPostSuccess: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    location: GeoPoint? = null,
+    userId: String? = null
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val context = LocalContext.current
+    val postHandler = remember { PostStoryHandler(context) }
+    val postState by postHandler.postState.collectAsState()
 
     val brightPink = Color(0xFFFF9CC7)
     val lightGray = Color(0xFFF5F5F5)
     val buttonGray = Color(0xFFE0E0E0)
 
-    val isPostEnabled = title.isNotBlank() && description.isNotBlank()
+    val isPostEnabled = title.isNotBlank() && description.isNotBlank() &&
+            postState !is PostStoryHandler.PostState.UploadingImage &&
+            postState !is PostStoryHandler.PostState.SavingToFirestore
+
+    // Handle post state changes
+    LaunchedEffect(postState) {
+        when (postState) {
+            is PostStoryHandler.PostState.Success -> {
+                onPostSuccess()
+                postHandler.resetState()
+            }
+            else -> { /* Handle other states as needed */ }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -112,7 +136,9 @@ fun PostStoryScreen(
                     unfocusedIndicatorColor = Color.Transparent
                 ),
                 shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                singleLine = true,
+                enabled = postState !is PostStoryHandler.PostState.UploadingImage &&
+                        postState !is PostStoryHandler.PostState.SavingToFirestore
             )
         }
 
@@ -136,12 +162,70 @@ fun PostStoryScreen(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                enabled = postState !is PostStoryHandler.PostState.UploadingImage &&
+                        postState !is PostStoryHandler.PostState.SavingToFirestore
             )
         }
-        
+
+        // Progress indicator
+        when (postState) {
+            is PostStoryHandler.PostState.UploadingImage -> {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = brightPink
+                )
+                Text(
+                    text = "Uploading image...",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            is PostStoryHandler.PostState.ImageUploadProgress -> {
+                val progress = (postState as PostStoryHandler.PostState.ImageUploadProgress).bytes.toFloat() / (postState as PostStoryHandler.PostState.ImageUploadProgress).totalBytes.toFloat()
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = brightPink
+                )
+                Text(
+                    text = "Uploading image: ${(progress * 100).toInt()}%",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            is PostStoryHandler.PostState.SavingToFirestore -> {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = brightPink
+                )
+                Text(
+                    text = "Saving your story...",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            is PostStoryHandler.PostState.Error -> {
+                Text(
+                    text = (postState as PostStoryHandler.PostState.Error).message,
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            else -> {
+                // No progress indicator needed
+            }
+        }
+
         Button(
-            onClick = { onPostClick(title, description, selectedImageUri) },
+            onClick = {
+                postHandler.createPost(
+                    title = title,
+                    description = description,
+                    imageUri = selectedImageUri,
+                    location = location
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isPostEnabled) brightPink else buttonGray,
@@ -149,7 +233,27 @@ fun PostStoryScreen(
             ),
             enabled = isPostEnabled
         ) {
-            Text("Post Story")
+            when (postState) {
+                is PostStoryHandler.PostState.UploadingImage,
+                is PostStoryHandler.PostState.ImageUploadProgress,
+                is PostStoryHandler.PostState.SavingToFirestore -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                else -> { /* No loading indicator */ }
+            }
+
+            val buttonText = when (postState) {
+                is PostStoryHandler.PostState.UploadingImage,
+                is PostStoryHandler.PostState.ImageUploadProgress -> "Uploading..."
+                is PostStoryHandler.PostState.SavingToFirestore -> "Saving..."
+                else -> "Post Story"
+            }
+            Text(buttonText)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
