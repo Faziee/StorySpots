@@ -48,6 +48,7 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListen
 import com.storyspots.caption.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.geojson.Point
+import com.storyspots.location.LocationManager
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 
@@ -60,20 +61,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private lateinit var mapView: MapView
     private var currentScreen by mutableStateOf("home")
-
-    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
-        centerMapOnUserLocation(mapView, point)
-    }
-
-    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
-        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
-    }
-
     private var pointAnnotationManager: PointAnnotationManager? = null
     private var contentInitialized = false
+    private lateinit var locationManager: LocationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        locationManager = LocationManager(this)
 
         FirebaseApp.initializeApp(this)
         FirebaseFirestore.getInstance().firestoreSettings =
@@ -133,9 +128,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     fun MapScreen() {
         //This and (NAVIGATE TO LN 157) will be replaced by navbar later
         val showFeed = remember { mutableStateOf(false) }
-
+        
         val selectedPin = remember { mutableStateOf<Point?>(null) }
-
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
 
         LaunchedEffect(selectedPin.value) {
@@ -154,45 +148,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
                             if (locationPermissionGranted.value) {
-                                enableLocationComponent(this)
+                                setupLocationTracking()
                             }
 
-                            val gesturesPlugin = this.gestures
-                            gesturesPlugin.updateSettings {
-                                scrollEnabled = true
-                                quickZoomEnabled = true
-                                rotateEnabled = true
-                                pitchEnabled = true
-                            }
-
-                            val annotationApi = annotations
-                            pointAnnotationManager = annotationApi.createPointAnnotationManager()
-
-                            val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
-                            SimpleClustering.setupClustering(this@apply, pointAnnotationManager!!, bitmap)
-
-                            ClusterZoomHandler.setupClusterClickHandler(this@apply, "clustering-pins")
-
-                            SimpleClustering.setOnPinClickListener { point ->
-                                Log.d("MainActivity", "Pin clicked at: $point")
-                                selectedPin.value = point
-                            }
-
-                            mapboxMap.addOnMapClickListener { point ->
-                                val currentZoom = mapboxMap.cameraState.zoom
-
-                                if (currentZoom >= 12.0) {
-                                    addPin(point)
-                                    false  // Don't consume so cluster clicks can work
-                                } else {
-                                    false
-                                }
-                            }
-
-                            pointAnnotationManager?.addClickListener { annotation ->
-                                selectedPin.value = annotation.point
-                                true
-                            }
+                            setupMapGestures()
+                            setupAnnotations(context)
                         }
                     }
                 }
@@ -206,6 +166,58 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                     )
                 }
             }
+        }
+    }
+
+    private fun setupLocationTracking() {
+        locationManager.setupLocationComponent(
+            mapView = mapView,
+            onLocationUpdate = { point ->
+                // Handle location updates - center if significant movement
+                locationManager.getLastLocation()?.let { savedPoint ->
+                    if (LocationManager.distanceBetween(savedPoint, point) > 50) {
+                        locationManager.centerOnLocation(mapView, point)
+                    }
+                } ?: run {
+                    locationManager.centerOnLocation(mapView, point)
+                }
+            },
+            centerOnFirstUpdate = true
+        )
+    }
+
+    private fun MapView.setupMapGestures() {
+        gestures.updateSettings {
+            scrollEnabled = true
+            quickZoomEnabled = true
+            rotateEnabled = true
+            pitchEnabled = true
+        }
+
+        mapboxMap.addOnMapClickListener { point ->
+            if (mapboxMap.cameraState.zoom >= 12.0) {
+                addPin(point)
+                false  // Don't consume event
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun MapView.setupAnnotations(context: android.content.Context) {
+        val annotationApi = annotations
+        pointAnnotationManager = annotationApi.createPointAnnotationManager()
+
+        val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.pin_marker)
+        SimpleClustering.setupClustering(this, pointAnnotationManager!!, bitmap)
+        ClusterZoomHandler.setupClusterClickHandler(this, "clustering-pins")
+
+        SimpleClustering.setOnPinClickListener { point ->
+            Log.d("MainActivity", "Pin clicked at: $point")
+        }
+
+        pointAnnotationManager?.addClickListener { annotation ->
+            true
         }
     }
 
@@ -255,74 +267,25 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     override fun onPermissionResult(granted: Boolean) {
         locationPermissionGranted.value = granted
+        val message = if (granted) "Location permission granted!" else "Location permission not granted :("
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
         if (granted) {
-            Toast.makeText(this, "Location permission granted!", Toast.LENGTH_SHORT).show()
-            mapView.getMapboxMap().getStyle { style ->
-                enableLocationComponent(mapView)
-            }
             if (!contentInitialized) {
                 initializeContent()
             } else if (::mapView.isInitialized) {
-                mapView.getMapboxMap().getStyle { style ->
-                    enableLocationComponent(mapView)
-                }
+                setupLocationTracking()
             }
-        } else {
-            Toast.makeText(this, "Location permission not granted :(", Toast.LENGTH_SHORT).show()
-            locationPermissionGranted.value = false
-            if (!contentInitialized) {
-                initializeContent()
-            }
+        } else if (!contentInitialized) {
+            initializeContent()
         }
-    }
-
-    private fun enableLocationComponent(mapView: MapView) {
-        mapView.location.updateSettings {
-            enabled = true
-            puckBearingEnabled = true
-            puckBearing = PuckBearing.COURSE
-            locationPuck = LocationPuck2D()
-
-            pulsingEnabled = true
-            pulsingColor = Color.BLUE
-            pulsingMaxRadius = 40f
-            showAccuracyRing = true
-            accuracyRingColor = Color.parseColor("#4d89cff0")
-            accuracyRingBorderColor = Color.parseColor("#80ffffff")
-        }
-
-        mapView.location.addOnIndicatorPositionChangedListener { point ->
-            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
-                mapView.camera.easeTo(
-                    CameraOptions.Builder()
-                        .center(point)
-                        .zoom(15.0)
-                        .build(),
-                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
-                )
-            }
-        }
-    }
-
-    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
-        mapView.camera.easeTo(
-            CameraOptions.Builder()
-                .center(point)
-                .zoom(15.0)
-                .build(),
-            MapAnimationOptions.mapAnimationOptions {
-                duration(1000)
-            }
-        )
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        if (::mapView.isInitialized) {
-            mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-            mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
+        if (::mapView.isInitialized && ::locationManager.isInitialized) {
+            locationManager.cleanup(mapView)
         }
+        super.onDestroy()
     }
 
     private fun addPin(point: Point) {
