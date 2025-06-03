@@ -1,3 +1,5 @@
+package com.storyspots.caption
+
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
@@ -15,7 +17,7 @@ data class StoryData(
     val caption: String?,
     val imageUrl: String?,
     val mapRef: DocumentReference?,
-    val authorRef: DocumentReference?
+//    val authorRef: DocumentReference?
 )
 
 fun DocumentSnapshot.toStoryData(): StoryData? {
@@ -28,7 +30,7 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
             caption = getString("caption"),
             imageUrl = getString("image_url"),
             mapRef = getDocumentReference("map"),
-            authorRef = getDocumentReference("user")
+//            authorRef = getDocumentReference("user")
         )
     } catch (e: Exception) {
         Log.e("StoryBox", "Error converting document to StoryData", e)
