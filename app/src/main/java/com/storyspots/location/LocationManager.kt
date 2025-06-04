@@ -2,7 +2,6 @@ package com.storyspots.location
 
 import android.content.Context
 import android.graphics.Color
-import android.util.Log
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
@@ -17,6 +16,7 @@ import kotlin.math.abs
 class LocationManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
     private var currentLocation: Point? = null
+    private var hasCenteredOnFirstLocation = false
     private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
 
     init {
@@ -24,10 +24,14 @@ class LocationManager(private val context: Context) {
     }
 
     private fun loadLastLocation() {
-        val lat = prefs.getFloat("last_lat", 0f).toDouble()
-        val lng = prefs.getFloat("last_lng", 0f).toDouble()
-        if (lat != 0.0 && lng != 0.0) {
-            currentLocation = Point.fromLngLat(lng, lat)
+        try {
+            val lat = prefs.getFloat("last_lat", 0f).toDouble()
+            val lng = prefs.getFloat("last_lng", 0f).toDouble()
+            if (lat != 0.0 && lng != 0.0) {
+                currentLocation = Point.fromLngLat(lng, lat)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("LocationManager", "Error loading last location", e)
         }
     }
 
@@ -63,7 +67,7 @@ class LocationManager(private val context: Context) {
         val listener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
                 currentLocation = point
-                saveLastLocation(point) // Save whenever we get updates
+                saveLastLocation(point)
                 onLocationUpdate(point)
             }
         }
@@ -80,7 +84,7 @@ class LocationManager(private val context: Context) {
                         .build(),
                     MapAnimationOptions.mapAnimationOptions {
                         duration(0)
-                    } // Instant
+                    }
                 )
             }
 
@@ -90,7 +94,7 @@ class LocationManager(private val context: Context) {
                     override fun onIndicatorPositionChanged(point: Point) {
                         if (isValidLocation(point)) {
                             currentLocation = point
-                            saveLastLocation(point)
+                            this@LocationManager.saveLastLocation(point)
                             centerOnLocation(mapView, point)
                             mapView.location.removeOnIndicatorPositionChangedListener(this)
                         }
