@@ -147,6 +147,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
                     MapView(context).also { mapView = it }.apply {
+
+                        getMapboxMap().setCamera(
+                            CameraOptions.Builder()
+                                .center(Point.fromLngLat(0.0, 0.0))
+                                .zoom(1.0)
+                                .build()
+                        )
+
                         getMapboxMap().loadStyleUri(
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
