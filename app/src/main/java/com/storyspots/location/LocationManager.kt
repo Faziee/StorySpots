@@ -2,25 +2,43 @@ package com.storyspots.location
 
 import android.content.Context
 import android.graphics.Color
+import android.util.Log
+import com.mapbox.android.gestures.MoveGestureDetector
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
+import com.mapbox.maps.plugin.gestures.OnMoveListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.PuckBearing
+import com.mapbox.maps.plugin.gestures.gestures
 import kotlin.math.abs
 
 class LocationManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
+    private var moveListener: OnMoveListener? = null
     private var currentLocation: Point? = null
     private var hasCenteredOnFirstLocation = false
     private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
 
+    private var isFollowingUser = true
+
     init {
         loadLastLocation()
+    }
+
+    fun isFollowingUser(): Boolean = isFollowingUser
+
+    fun enableFollowMode(mapView: MapView? = null) {
+        isFollowingUser = true
+        mapView?.let { currentLocation?.let { point -> centerOnLocation(it, point) } }
+    }
+
+    fun disableFollowMode() {
+        isFollowingUser = false
     }
 
     private fun loadLastLocation() {
@@ -31,7 +49,7 @@ class LocationManager(private val context: Context) {
                 currentLocation = Point.fromLngLat(lng, lat)
             }
         } catch (e: Exception) {
-            android.util.Log.e("LocationManager", "Error loading last location", e)
+            Log.e("LocationManager", "Error loading last location", e)
         }
     }
 
@@ -58,54 +76,67 @@ class LocationManager(private val context: Context) {
             pulsingMaxRadius = 40f
         }
 
-        // Remove previous listener if exists
+        moveListener = object : OnMoveListener {
+            override fun onMoveBegin(detector: MoveGestureDetector) {
+                disableFollowMode()
+            }
+            override fun onMove(detector: MoveGestureDetector) = false
+            override fun onMoveEnd(detector: MoveGestureDetector) {}
+        }.also { mapView.gestures.addOnMoveListener(it) }
+
+        // Remove previous location listener if exists
         locationUpdateListener?.let {
             mapView.location.removeOnIndicatorPositionChangedListener(it)
         }
 
-        // Add new listener to track current location
-        val listener = OnIndicatorPositionChangedListener { point ->
+        // Add new location listener
+        locationUpdateListener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
                 currentLocation = point
                 saveLastLocation(point)
+                if (isFollowingUser) {
+                    smoothFollowLocation(mapView, point)
+                }
                 onLocationUpdate(point)
             }
-        }
-        locationUpdateListener = listener
-        mapView.location.addOnIndicatorPositionChangedListener(listener)
+        }.also { mapView.location.addOnIndicatorPositionChangedListener(it) }
 
         if (centerOnFirstUpdate) {
-            // First try to center on last known location
-            currentLocation?.let { lastLocation ->
-                mapView.camera.easeTo(
-                    CameraOptions.Builder()
-                        .center(lastLocation)
-                        .zoom(15.0)
-                        .build(),
-                    MapAnimationOptions.mapAnimationOptions {
-                        duration(0)
-                    }
-                )
-            }
+            initializeCameraPosition(mapView)
+        }
+    }
 
-            // Then update to current location when available
-            mapView.location.addOnIndicatorPositionChangedListener(
-                object : OnIndicatorPositionChangedListener {
-                    override fun onIndicatorPositionChanged(point: Point) {
-                        if (isValidLocation(point)) {
-                            currentLocation = point
-                            this@LocationManager.saveLastLocation(point)
-                            centerOnLocation(mapView, point)
-                            mapView.location.removeOnIndicatorPositionChangedListener(this)
-                        }
-                    }
-                }
+    private fun initializeCameraPosition(mapView: MapView) {
+        currentLocation?.let { lastLocation ->
+            mapView.getMapboxMap().setCamera(
+                CameraOptions.Builder()
+                    .center(lastLocation)
+                    .zoom(15.0)
+                    .build()
+            )
+        } ?: run {
+            mapView.getMapboxMap().setCamera(
+                CameraOptions.Builder()
+                    .center(Point.fromLngLat(0.0, 0.0))
+                    .zoom(1.0)
+                    .build()
             )
         }
     }
 
+    private fun smoothFollowLocation(mapView: MapView, point: Point) {
+        mapView.camera.easeTo(
+            CameraOptions.Builder()
+                .center(point)
+                .zoom(15.0)
+                .build(),
+            MapAnimationOptions.mapAnimationOptions { duration(500) }
+        )
+    }
+
     fun recenterOnUserLocation(mapView: MapView, zoom: Double = 15.0): Boolean {
         return currentLocation?.let { point ->
+            enableFollowMode(mapView)
             centerOnLocation(mapView, point, zoom)
             true
         } ?: false
@@ -125,7 +156,11 @@ class LocationManager(private val context: Context) {
         locationUpdateListener?.let {
             mapView.location.removeOnIndicatorPositionChangedListener(it)
         }
+        moveListener?.let {
+            mapView.gestures.removeOnMoveListener(it)
+        }
         locationUpdateListener = null
+        moveListener = null
     }
 
     private fun isValidLocation(point: Point): Boolean {
