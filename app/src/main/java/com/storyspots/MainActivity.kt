@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                                         selectedImageUri = null
                                         currentScreen = "home"
                                     },
-                                    location = getCurrentLocation()
+                                    getLocation = ::getCurrentLocation
                                 )
                             }
                             else -> MapScreen()
@@ -202,7 +202,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private fun getCurrentLocation(): GeoPoint? {
         return currentUserLocation?.let { point ->
-            GeoPoint(point.latitude(), point.longitude())
+            val geoPoint = GeoPoint(point.latitude(), point.longitude())
+            geoPoint
+        } ?: run {
+            null
         }
     }
 
@@ -363,6 +366,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
         mapView.location.addOnIndicatorPositionChangedListener { point ->
             if (point.latitude() != 0.0 && point.longitude() != 0.0) {
+                currentUserLocation = point
                 mapView.camera.easeTo(
                     CameraOptions.Builder()
                         .center(point)

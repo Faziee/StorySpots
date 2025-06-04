@@ -1,6 +1,7 @@
 package com.storyspots.post
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,7 +35,7 @@ fun PostStoryScreen(
     selectedImageUri: Uri? = null,
     onPostSuccess: () -> Unit = {},
     modifier: Modifier = Modifier,
-    location: GeoPoint? = null,
+    getLocation: ()-> GeoPoint?= {null},
     userId: String? = null
 ) {
     var title by remember { mutableStateOf("") }
@@ -219,11 +220,13 @@ fun PostStoryScreen(
 
         Button(
             onClick = {
+                val currentLocation = getLocation()
+
                 postHandler.createPost(
                     title = title,
                     description = description,
                     imageUri = selectedImageUri,
-                    location = location
+                    location = currentLocation
                 )
             },
             modifier = Modifier.fillMaxWidth(),
