@@ -123,7 +123,7 @@ class PostStoryHandler(private val context: Context) {
             "user" to "/user/${currentUser.uid}"
         )
 
-        firestore.collection("story")
+        firestore.collection("story_test")
             .document(documentId)
             .set(postDocument)
             .addOnSuccessListener {
