@@ -59,6 +59,7 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListen
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.post.PostStoryScreen
+import com.storyspots.pushNotification.NotificationPermissionHandler
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -103,12 +104,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
         }
+
     }
 
     private fun initializeContent() {
         contentInitialized = true
         setContent {
             MaterialTheme {
+                NotificationPermissionHandler()
                 // Permission launcher for media access
                 val mediaPermissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
