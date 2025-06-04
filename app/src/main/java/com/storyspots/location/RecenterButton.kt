@@ -1,14 +1,15 @@
 package com.storyspots.location
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -19,26 +20,36 @@ import com.storyspots.R
 fun RecenterButton(
     mapView: MapView,
     locationManager: LocationManager,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRecenter: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
-    FloatingActionButton(
-        onClick = {
-            try {
-                locationManager.recenterOnUserLocation(mapView)
-                Toast.makeText(context, "Recentering...", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Log.e("RecenterButton", "Failed to recenter", e)
-                Toast.makeText(context, "Failed to recenter", Toast.LENGTH_SHORT).show()
-            }
-        },
-        modifier = modifier.padding(16.dp),
-        containerColor = MaterialTheme.colorScheme.primary
+    Surface(
+        modifier = modifier
+            .size(48.dp)
+            .padding(4.dp),
+        shape = CircleShape,
+        color = Color(0xFFFF9CC7),
+        shadowElevation = 4.dp
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_location_finder),
-            contentDescription = "Recenter map"
-        )
+        IconButton(
+            onClick = {
+                if (locationManager.recenterOnUserLocation(mapView)) {
+                    onRecenter()
+                } else {
+                    Toast.makeText(context, "Getting location...", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.size(36.dp)
+                .size(48.dp)
+                .padding(6.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_location_finder),
+                contentDescription = "Recenter map",
+                tint = Color.White
+            )
+        }
     }
 }
