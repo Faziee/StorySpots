@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -49,6 +50,7 @@ import com.storyspots.caption.DismissibleStoryStack
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.geojson.Point
 import com.storyspots.location.LocationManager
+import com.storyspots.location.RecenterButton
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 
@@ -131,6 +133,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         
         val selectedPin = remember { mutableStateOf<Point?>(null) }
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
+        var mapReady by remember { mutableStateOf(false) }
 
         LaunchedEffect(selectedPin.value) {
             selectedPin.value?.let { pin ->
@@ -153,10 +156,22 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
                             setupMapGestures()
                             setupAnnotations(context)
+                            mapReady = true
                         }
                     }
                 }
             )
+
+            if(mapReady && ::locationManager.isInitialized)
+            {
+                RecenterButton(
+                    mapView = mapView,
+                    locationManager = locationManager,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 30.dp)
+                )
+            }
 
             selectedPin.value?.let { pin ->
                 pinScreenOffset.value?.let { offset ->
@@ -173,14 +188,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         locationManager.setupLocationComponent(
             mapView = mapView,
             onLocationUpdate = { point ->
-                // Handle location updates - center if significant movement
-                locationManager.getLastLocation()?.let { savedPoint ->
-                    if (LocationManager.distanceBetween(savedPoint, point) > 50) {
-                        locationManager.centerOnLocation(mapView, point)
-                    }
-                } ?: run {
-                    locationManager.centerOnLocation(mapView, point)
-                }
             },
             centerOnFirstUpdate = true
         )
