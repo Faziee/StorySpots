@@ -1,8 +1,8 @@
 package com.storyspots.location
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Color
+import android.util.Log
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
@@ -15,46 +15,14 @@ import com.mapbox.maps.plugin.PuckBearing
 import kotlin.math.abs
 
 class LocationManager(private val context: Context) {
-    private val prefs = context.getSharedPreferences("LocationPrefs", Context.MODE_PRIVATE)
-    private var lastKnownLocation: Point? = null
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
-
-    fun saveLocation(point: Point) {
-        lastKnownLocation = point
-        prefs.edit().apply {
-            putFloat("last_lat", point.latitude().toFloat())
-            putFloat("last_lon", point.longitude().toFloat())
-            apply()
-        }
-    }
-
-    fun getLastLocation(): Point? {
-        return lastKnownLocation ?: if (prefs.contains("last_lat") && prefs.contains("last_lon")) {
-            Point.fromLngLat(
-                prefs.getFloat("last_lon", 0f).toDouble(),
-                prefs.getFloat("last_lat", 0f).toDouble()
-            ).also { lastKnownLocation = it }
-        } else {
-            null
-        }
-    }
-
-    fun centerOnLocation(mapView: MapView, point: Point, zoom: Double = 15.0) {
-        mapView.camera.easeTo(
-            CameraOptions.Builder()
-                .center(point)
-                .zoom(zoom)
-                .build(),
-            MapAnimationOptions.mapAnimationOptions { duration(1000) }
-        )
-    }
+    private var currentLocation: Point? = null
 
     fun setupLocationComponent(
         mapView: MapView,
-        onLocationUpdate: (Point) -> Unit,
+        onLocationUpdate: (Point) -> Unit = {},
         centerOnFirstUpdate: Boolean = true
     ) {
-        // Configure location appearance
         mapView.location.updateSettings {
             enabled = true
             puckBearingEnabled = true
@@ -73,22 +41,46 @@ class LocationManager(private val context: Context) {
             mapView.location.removeOnIndicatorPositionChangedListener(it)
         }
 
-        // Add new listener
+        // Add new listener to track current location
         val listener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
-                saveLocation(point)
+                currentLocation = point
                 onLocationUpdate(point)
             }
         }
         locationUpdateListener = listener
         mapView.location.addOnIndicatorPositionChangedListener(listener)
-
-        // Center on last known location first if requested
+        
         if (centerOnFirstUpdate) {
-            getLastLocation()?.let { lastLocation ->
-                centerOnLocation(mapView, lastLocation)
-            }
+            mapView.location.addOnIndicatorPositionChangedListener(
+                object : OnIndicatorPositionChangedListener {
+                    override fun onIndicatorPositionChanged(point: Point) {
+                        if (isValidLocation(point)) {
+                            currentLocation = point
+                            centerOnLocation(mapView, point)
+                            mapView.location.removeOnIndicatorPositionChangedListener(this)
+                        }
+                    }
+                }
+            )
         }
+    }
+
+    fun recenterOnUserLocation(mapView: MapView, zoom: Double = 15.0): Boolean {
+        return currentLocation?.let { point ->
+            centerOnLocation(mapView, point, zoom)
+            true
+        } ?: false
+    }
+
+    fun centerOnLocation(mapView: MapView, point: Point, zoom: Double = 15.0) {
+        mapView.camera.easeTo(
+            CameraOptions.Builder()
+                .center(point)
+                .zoom(zoom)
+                .build(),
+            MapAnimationOptions.mapAnimationOptions { duration(1000) }
+        )
     }
 
     fun cleanup(mapView: MapView) {
