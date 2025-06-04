@@ -17,6 +17,27 @@ import kotlin.math.abs
 class LocationManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
     private var currentLocation: Point? = null
+    private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
+
+    init {
+        loadLastLocation()
+    }
+
+    private fun loadLastLocation() {
+        val lat = prefs.getFloat("last_lat", 0f).toDouble()
+        val lng = prefs.getFloat("last_lng", 0f).toDouble()
+        if (lat != 0.0 && lng != 0.0) {
+            currentLocation = Point.fromLngLat(lng, lat)
+        }
+    }
+
+    private fun saveLastLocation(point: Point) {
+        prefs.edit().apply {
+            putFloat("last_lat", point.latitude().toFloat())
+            putFloat("last_lng", point.longitude().toFloat())
+            apply()
+        }
+    }
 
     fun setupLocationComponent(
         mapView: MapView,
@@ -31,9 +52,6 @@ class LocationManager(private val context: Context) {
             pulsingEnabled = true
             pulsingColor = Color.BLUE
             pulsingMaxRadius = 40f
-            showAccuracyRing = true
-            accuracyRingColor = Color.parseColor("#4d89cff0")
-            accuracyRingBorderColor = Color.parseColor("#80ffffff")
         }
 
         // Remove previous listener if exists
@@ -45,18 +63,34 @@ class LocationManager(private val context: Context) {
         val listener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
                 currentLocation = point
+                saveLastLocation(point) // Save whenever we get updates
                 onLocationUpdate(point)
             }
         }
         locationUpdateListener = listener
         mapView.location.addOnIndicatorPositionChangedListener(listener)
-        
+
         if (centerOnFirstUpdate) {
+            // First try to center on last known location
+            currentLocation?.let { lastLocation ->
+                mapView.camera.easeTo(
+                    CameraOptions.Builder()
+                        .center(lastLocation)
+                        .zoom(15.0)
+                        .build(),
+                    MapAnimationOptions.mapAnimationOptions {
+                        duration(0)
+                    } // Instant
+                )
+            }
+
+            // Then update to current location when available
             mapView.location.addOnIndicatorPositionChangedListener(
                 object : OnIndicatorPositionChangedListener {
                     override fun onIndicatorPositionChanged(point: Point) {
                         if (isValidLocation(point)) {
                             currentLocation = point
+                            saveLastLocation(point)
                             centerOnLocation(mapView, point)
                             mapView.location.removeOnIndicatorPositionChangedListener(this)
                         }
