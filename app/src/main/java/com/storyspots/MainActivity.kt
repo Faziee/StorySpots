@@ -65,6 +65,7 @@ import com.storyspots.pin.SimpleClustering
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.post.PostStoryScreen
 import com.storyspots.pushNotification.NotificationPermissionHandler
+import com.storyspots.yourFeed.YourFeedScreen
 
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
@@ -169,6 +170,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         when {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
+                            currentScreen == "your_feed" -> YourFeedScreen()
                             currentScreen == "create" -> {
                                 PostStoryScreen(
                                     onImageSelect = {
@@ -345,9 +347,9 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 currentScreen = "home"
                 Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
             }
-            NavItem.Favourites -> {
-                currentScreen = "favorites"
-                Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
+            NavItem.YourFeed -> {
+                currentScreen = "your_feed"
+                Toast.makeText(this, "Your Feed selected", Toast.LENGTH_SHORT).show()
             }
             NavItem.Notifications -> {
                 // Toggle between notifications and map
