@@ -1,6 +1,6 @@
 package com.storyspots.caption
 
-import StoryData
+//import StoryData
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
-import fetchAllStories
+//import fetchAllStories
 import androidx.compose.foundation.background
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
@@ -46,6 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
 
 @Composable
 fun StoryCard(
@@ -190,7 +191,7 @@ fun StoryStack(
     }
 
     DisposableEffect(Unit) {
-        val registration = fetchAllStories { result ->
+        val registration = Story().fetchAllStories { result ->
             stories = result
             isLoading = false
         }

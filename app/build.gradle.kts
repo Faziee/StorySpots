@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.play.services.maps)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

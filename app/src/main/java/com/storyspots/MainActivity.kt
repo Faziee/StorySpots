@@ -51,6 +51,7 @@ import com.mapbox.geojson.Point
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 
+
 @OptIn(MapboxExperimental::class)
 class MainActivity : ComponentActivity(), PermissionsListener {
 
@@ -153,6 +154,24 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         getMapboxMap().loadStyleUri(
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
+                            FirebaseFirestore.getInstance()
+                                .collection("story")
+                                .get()
+                                .addOnSuccessListener { documents ->
+                                    pointAnnotationManager?.deleteAll()
+
+                                    for (document in documents) {
+                                        val geoPoint = document.getGeoPoint("location") // assuming your field is named "location"
+                                        if (geoPoint != null) {
+                                            val point = Point.fromLngLat(geoPoint.longitude, geoPoint.latitude)
+                                            addPin(point)
+                                        }
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.w(TAG, "Error fetching geo points", e)
+                                }
+
                             if (locationPermissionGranted.value) {
                                 enableLocationComponent(this)
                             }
