@@ -47,7 +47,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-
 @Composable
 fun StoryCard(
     story: StoryData,
