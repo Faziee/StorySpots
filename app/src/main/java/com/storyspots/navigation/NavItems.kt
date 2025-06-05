@@ -8,7 +8,7 @@ sealed class NavItem(
     val route: String
 ) {
     object Home : NavItem("Home", R.drawable.ic_home, "home")
-    object Favourites : NavItem("Favourites", R.drawable.ic_favourites, "favourites")
+    object YourFeed : NavItem("Your Feed", R.drawable.ic_favourites, "your_feed")
     object Notifications : NavItem("Notifications", R.drawable.ic_notifications, "notifications")
     object Settings : NavItem("Settings", R.drawable.ic_settings, "settings")
     object CreatePost : NavItem("", R.drawable.ic_post, "create_post")
