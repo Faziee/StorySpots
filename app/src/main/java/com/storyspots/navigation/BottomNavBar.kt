@@ -19,7 +19,7 @@ fun BottomNavBar(
     currentRoute: String?,
     onItemClick: (NavItem) -> Unit
 ) {
-    val sideItems = listOf(NavItem.Home, NavItem.YourFeed, null, NavItem.Notifications, NavItem.Settings)
+    val sideItems = listOf(NavItem.Home, NavItem.Favourites, null, NavItem.Notifications, NavItem.Settings)
 
     Box(
         modifier = Modifier

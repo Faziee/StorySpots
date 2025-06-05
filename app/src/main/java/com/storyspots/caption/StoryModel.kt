@@ -12,5 +12,6 @@ data class StoryData(
     val caption: String?,
     val imageUrl: String?,
     val mapRef: DocumentReference?,
-    val authorRef: DocumentReference?
+    val authorRef: DocumentReference?,
+    val userPath: String?
 )

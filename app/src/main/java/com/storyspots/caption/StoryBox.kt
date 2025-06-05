@@ -190,7 +190,7 @@ fun StoryStack(
     }
 
     DisposableEffect(Unit) {
-        val registration = Story().fetchAllStories { result ->
+        val registration = fetchAllStories { result ->
             stories = result
             isLoading = false
         }

@@ -12,7 +12,6 @@ import com.mapbox.maps.MapboxMap
 import com.mapbox.maps.toCameraOptions
 import kotlin.math.abs
 
-class Story {
 fun DocumentSnapshot.toStoryData(): StoryData? {
     return try {
         val userField = get("user")
@@ -134,4 +133,3 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
     fun updateMapWithStories(stories: List<StoryData>) {
         // Your logic here to add pins, markers, etc.
     }
-}
