@@ -4,12 +4,11 @@ import java.util.Date
 data class NotificationItem(
     val id: String,
     val createdAt: Date,
-    val from: String,
-    val fromUserId :String,
+    val title: String,
+    val message: String? = null,
     val read: Boolean,
+    val fromUserId :String,
     val story: String,
-    val to: String,
-    val imageUrl: String? = null,
-    val message: String? = null
+    val imageUrl: String? = null
 )
 

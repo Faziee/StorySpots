@@ -54,7 +54,6 @@ class NotificationsViewModel : ViewModel() {
                 val notifications = querySnapshot.documents.mapNotNull { doc ->
                     try {
                         val fromRef = doc.getDocumentReference("from") ?: return@mapNotNull null
-                        val toRef = doc.getDocumentReference("to") ?: return@mapNotNull null
                         val storyRef = doc.getDocumentReference("story") ?: return@mapNotNull null
                         val userId = fromRef.id
                         val userDoc = db.collection("user").document(userId).get().await()
@@ -70,15 +69,14 @@ class NotificationsViewModel : ViewModel() {
                         val message = "$userName mentioned you in a story"
 
                         NotificationItem(
-                            id = doc.id,
+                            id = doc.getString("id") ?: "",
                             createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date(),
-                            from = userName,
-                            fromUserId = userId,
+                            title = doc.getString("title") ?: "Notification",
+                            message = doc.getString("message"),
                             read = doc.getBoolean("read") ?: false,
-                            story = storyRef.path,
-                            to = toRef.path,
-                            imageUrl = imageUrl,
-                            message = message
+                            fromUserId = doc.getString("fromUserId") ?: "",
+                            story = doc.getString("story") ?: "",
+                            imageUrl = doc.getString("imageUrl")
                         )
                     } catch (e: Exception) {
                         println("Error processing notification ${doc.id}: ${e.message}")
