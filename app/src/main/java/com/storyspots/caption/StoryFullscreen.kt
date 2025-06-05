@@ -5,7 +5,7 @@ import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.White
 import com.storyspots.ui.theme.Black
 import com.storyspots.ui.theme.MediumText
-import StoryData
+import com.storyspots.caption.StoryData
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
