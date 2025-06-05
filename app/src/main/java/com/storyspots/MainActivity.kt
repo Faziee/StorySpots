@@ -58,7 +58,6 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.mapbox.geojson.Point
 import com.storyspots.location.LocationManager
 import com.storyspots.location.RecenterButton
 import com.storyspots.pin.ClusterZoomHandler
@@ -83,7 +82,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
         currentUserLocation = point
-        centerMapOnUserLocation(mapView, point)
+//        centerMapOnUserLocation(mapView, point)
     }
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
