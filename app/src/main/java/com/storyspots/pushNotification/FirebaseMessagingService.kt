@@ -68,8 +68,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             "created_at" to Timestamp.now(),
             "read" to false,
             "fromUserId" to fromUserId,
-            "story" to storyRef,  // 🔥 Store as reference
-            "from" to fromRef,    // 🔥 Store as reference
+            "story" to storyRef,
+            "from" to fromRef,
             "imageUrl" to imageUrl
         )
 
