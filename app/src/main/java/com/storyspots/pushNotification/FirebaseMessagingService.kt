@@ -27,7 +27,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     private fun showNotification(title: String?, body: String?){
         val channelId ="default_channel_id"
-        val notificationBuilder = NotificationCompat.Builder(this, channelId).setContentTitle(title).setContentText(body).setSmallIcon(R.drawable.ic_notification).setAutoCancel(true)
+        val notificationBuilder = NotificationCompat.Builder(this, channelId).setContentTitle(title).setContentText(body).setSmallIcon(R.drawable.ic_notifications).setAutoCancel(true)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
