@@ -21,16 +21,16 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-// THE CODE BELLOW IS COMMENTED OUT FOR TESTING ONLY!!!!!!!!
-// WHEN THE APP IS DONE UNCOMMENT OR USERS WILL HAVE TO LOGIN EVERYTIME
+        // THE CODE BELLOW IS COMMENTED OUT FOR TESTING ONLY!!!!!!!!
+        // WHEN THE APP IS DONE UNCOMMENT OR USERS WILL HAVE TO LOGIN EVERYTIME
 
-//        val currentUser = FirebaseAuth.getInstance().currentUser
-//
-//        if (currentUser != null) {
-//            startActivity(Intent(this, MainActivity::class.java))
-//            finish()
-//            return
-//        }
+        val currentUser = FirebaseAuth.getInstance().currentUser
+
+        if (currentUser != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
 
         setContentView(R.layout.activity_login)
 
