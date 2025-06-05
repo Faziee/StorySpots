@@ -17,11 +17,26 @@ data class StoryData(
     val caption: String?,
     val imageUrl: String?,
     val mapRef: DocumentReference?,
-    val authorRef: DocumentReference?
+    val authorRef: DocumentReference?,
+    val userPath: String? = null
 )
 
 fun DocumentSnapshot.toStoryData(): StoryData? {
     return try {
+        val userField = get("user")
+        val authorRef: DocumentReference? = when (userField) {
+            is DocumentReference -> userField
+            is String -> {
+                if (userField.startsWith("/user/")) {
+                    val userId = userField.removePrefix("/user/")
+                    FirebaseFirestore.getInstance().collection("users").document(userId)
+                } else {
+                    null
+                }
+            }
+            else -> null
+        }
+
         StoryData(
             id = id,
             title = getString("title") ?: "Untitled",
@@ -30,10 +45,12 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
             caption = getString("caption"),
             imageUrl = getString("image_url"),
             mapRef = getDocumentReference("map"),
-            authorRef = getDocumentReference("user")
+            authorRef = authorRef,
+            userPath = userField as? String // Store the original string path too
         )
     } catch (e: Exception) {
-        Log.e("StoryBox", "Error converting document to StoryData", e)
+        Log.e("StoryBox", "Error converting document to StoryData: ${e.message}")
+        Log.e("StoryBox", "Document data: ${data}")
         null
     }
 }
