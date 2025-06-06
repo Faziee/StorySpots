@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.dotenv.kotlin)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation (libs.androidx.material.icons.extended)
     ksp(libs.hilt.android.compiler)
 
     //-----SERVICES: FIREBASE-------
