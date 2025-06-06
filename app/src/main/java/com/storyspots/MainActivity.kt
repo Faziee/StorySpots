@@ -65,6 +65,7 @@ import com.storyspots.pin.SimpleClustering
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.post.PostStoryScreen
 import com.storyspots.pushNotification.NotificationPermissionHandler
+import com.storyspots.settings.SettingsScreen
 import com.storyspots.yourFeed.YourFeedScreen
 
 @OptIn(MapboxExperimental::class)
@@ -161,6 +162,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
                             currentScreen == "your_feed" -> YourFeedScreen()
+                            currentScreen == "settings" -> SettingsScreen()
                             currentScreen == "create" -> {
                                 PostStoryScreen(
                                     onImageSelect = {
