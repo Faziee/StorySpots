@@ -70,7 +70,7 @@ fun RegisterScreen(
         Image(
             painter = painterResource(id = R.drawable.logo_ss),
             contentDescription = "Logo",
-            modifier = Modifier.size(150.dp),
+            modifier = Modifier.size(200.dp),
             contentScale = ContentScale.Fit
         )
 
