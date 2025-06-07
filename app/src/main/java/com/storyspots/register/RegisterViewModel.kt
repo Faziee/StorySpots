@@ -9,14 +9,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 import androidx.core.net.toUri
+import com.storyspots.services.cloudinary.CloudinaryService
+import kotlinx.coroutines.flow.collectLatest
 
 data class RegisterUiState(
     val email: String = "",
@@ -25,7 +25,8 @@ data class RegisterUiState(
     val passwordVisible: Boolean = false,
     val selectedImageUri: Uri? = null,
     val isLoading: Boolean = false,
-    val showPasswordHints: Boolean = false
+    val showPasswordHints: Boolean = false,
+    val isUploadingImage: Boolean = false
 )
 
 data class PasswordValidation(
@@ -39,13 +40,43 @@ data class PasswordValidation(
 class RegisterViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
+    private var cloudinaryService: CloudinaryService? = null
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     private val _passwordValidation = MutableStateFlow(PasswordValidation())
     val passwordValidation: StateFlow<PasswordValidation> = _passwordValidation.asStateFlow()
+
+    private val _uploadedImageUrl = MutableStateFlow<String?>(null)
+    val uploadedImageUrl: StateFlow<String?> = _uploadedImageUrl.asStateFlow()
+
+    fun initializeCloudinaryService(context: Context) {
+        cloudinaryService = CloudinaryService(context)
+
+        // Observe upload state changes
+        viewModelScope.launch {
+            cloudinaryService?.uploadState?.collectLatest { uploadState ->
+                when (uploadState) {
+                    is CloudinaryService.UploadState.Loading,
+                    is CloudinaryService.UploadState.Progress -> {
+                        _uiState.value = _uiState.value.copy(isUploadingImage = true)
+                    }
+                    is CloudinaryService.UploadState.Success -> {
+                        _uploadedImageUrl.value = uploadState.url
+                        _uiState.value = _uiState.value.copy(isUploadingImage = false)
+                    }
+                    is CloudinaryService.UploadState.Error -> {
+                        _uiState.value = _uiState.value.copy(isUploadingImage = false)
+                        // Handle error - you might want to show a toast or update UI state
+                    }
+                    is CloudinaryService.UploadState.Idle -> {
+                        _uiState.value = _uiState.value.copy(isUploadingImage = false)
+                    }
+                }
+            }
+        }
+    }
 
     fun updateEmail(email: String) {
         _uiState.value = _uiState.value.copy(email = email)
@@ -71,6 +102,15 @@ class RegisterViewModel : ViewModel() {
 
     fun updateSelectedImage(uri: Uri?) {
         _uiState.value = _uiState.value.copy(selectedImageUri = uri)
+
+        // Upload to Cloudinary when image is selected
+        uri?.let {
+            uploadImageToCloudinary(it)
+        }
+    }
+
+    private fun uploadImageToCloudinary(uri: Uri) {
+        cloudinaryService?.uploadImageToCloudinary(uri)
     }
 
     private fun validatePassword(password: String) {
@@ -102,6 +142,12 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
+        // Check if image is still uploading
+        if (currentState.isUploadingImage) {
+            Toast.makeText(context, "Please wait for image upload to complete", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         _uiState.value = currentState.copy(isLoading = true)
 
         viewModelScope.launch {
@@ -113,11 +159,8 @@ class RegisterViewModel : ViewModel() {
 
                 val user = authResult.user
                 if (user != null) {
-                    val profileImageUrl = if (currentState.selectedImageUri != null) {
-                        uploadProfileImage(currentState.selectedImageUri, user.uid)
-                    } else {
-                        getDefaultProfileImageUrl()
-                    }
+                    // Use the uploaded Cloudinary URL or null for default
+                    val profileImageUrl = _uploadedImageUrl.value
 
                     updateUserProfile(user.uid, currentState.username, profileImageUrl)
 
@@ -134,21 +177,8 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
-    private suspend fun uploadProfileImage(imageUri: Uri, userId: String): String? {
-        return try {
-            val imageRef = storage.reference.child("profile_images/$userId/${UUID.randomUUID()}")
-            imageRef.putFile(imageUri).await()
-            imageRef.downloadUrl.await().toString()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun getDefaultProfileImageUrl(): String {
-        // You can use a default image from your drawable resources
-        // or a placeholder service like UI Avatars
-        val username = _uiState.value.username
-        return "https://ui-avatars.com/api/?name=${username}&background=6200ee&color=fff&size=200"
+    private fun getDefaultProfileImageUrl(): String? {
+        return null
     }
 
     private suspend fun updateUserProfile(userId: String, username: String, profileImageUrl: String?) {

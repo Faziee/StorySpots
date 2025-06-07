@@ -47,7 +47,12 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val passwordValidation by viewModel.passwordValidation.collectAsState()
+    val uploadedImageUrl by viewModel.uploadedImageUrl.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.initializeCloudinaryService(context)
+    }
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -97,10 +102,32 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Profile Picture Selection
+
         ProfilePictureSelector(
             selectedImageUri = uiState.selectedImageUri,
+            uploadedImageUrl = uploadedImageUrl,
+            isUploadingImage = uiState.isUploadingImage,
             onImageSelect = { imagePickerLauncher.launch("image/*") }
         )
+
+        // Upload status text
+        if (uiState.isUploadingImage) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Uploading image...",
+                color = Authentication,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        } else if (uploadedImageUrl != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Image uploaded successfully!",
+                color = SuccessColour,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -190,7 +217,7 @@ fun RegisterScreen(
                 .padding(horizontal = 32.dp),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Authentication),
-            enabled = !uiState.isLoading
+            enabled = !uiState.isLoading && !uiState.isUploadingImage
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -199,7 +226,11 @@ fun RegisterScreen(
                 )
             } else {
                 Text(
-                    text = "Register",
+                    text = when {
+                        uiState.isLoading -> "Creating Account..."
+                        uiState.isUploadingImage -> "Uploading Image..."
+                        else -> "Register"
+                    },
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -224,6 +255,8 @@ fun RegisterScreen(
 @Composable
 fun ProfilePictureSelector(
     selectedImageUri: Uri?,
+    uploadedImageUrl: String?,
+    isUploadingImage: Boolean,
     onImageSelect: () -> Unit
 ) {
     Box(
@@ -234,50 +267,78 @@ fun ProfilePictureSelector(
             .clickable { onImageSelect() },
         contentAlignment = Alignment.Center
     ) {
-        if (selectedImageUri != null) {
-            AsyncImage(
-                model = selectedImageUri,
-                contentDescription = "Profile Picture",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            // Default profile picture placeholder
-            Box(
-                modifier = Modifier
-                    .size(120.dp),
-                contentAlignment = Alignment.Center
-            ) {
+        when {
+            isUploadingImage -> {
+                // Show upload progress
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(120.dp)
                         .clip(CircleShape)
                         .background(LightGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Default Profile Picture",
-                        tint = HintGray,
-                        modifier = Modifier.size(60.dp)
+                    CircularProgressIndicator(
+                        color = Authentication,
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .offset(x = 30.dp, y = 30.dp)
-                    .zIndex(1f)
-                    .clip(CircleShape)
-                    .background(Authentication),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Photo",
-                    tint = White,
-                    modifier = Modifier.size(24.dp)
+            uploadedImageUrl != null -> {
+                // Show uploaded image from Cloudinary
+                AsyncImage(
+                    model = uploadedImageUrl,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
+            }
+            selectedImageUri != null -> {
+                // Show selected image (while uploading)
+                AsyncImage(
+                    model = selectedImageUri,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            else -> {
+                // Default profile picture placeholder
+                Box(
+                    modifier = Modifier
+                        .size(120.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Default Profile Picture",
+                            tint = HintGray,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .offset(x = 30.dp, y = 30.dp)
+                        .zIndex(1f)
+                        .clip(CircleShape)
+                        .background(Authentication),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Photo",
+                        tint = White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }
