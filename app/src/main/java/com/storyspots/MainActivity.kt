@@ -330,18 +330,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         when (item) {
             NavItem.Home -> {
                 currentScreen = "home"
-                Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
             }
             NavItem.YourFeed -> {
                 currentScreen = "your_feed"
-                Toast.makeText(this, "Your Feed selected", Toast.LENGTH_SHORT).show()
             }
             NavItem.Notifications -> {
                 currentScreen = if (currentScreen == "notifications") "home" else "notifications"
             }
             NavItem.Settings -> {
                 currentScreen = "settings"
-                Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
             }
             NavItem.CreatePost -> {
                 currentScreen = "create"
