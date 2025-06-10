@@ -12,6 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 val Pink = Color(0xFFFF2D87)
 val LightPink = Color(0xFFFFD6E5)
+val UltraLightPink =  Color(0xFFFFE5EC)
 val DarkText = Color(0xFF1D1D1D)
 val MediumText = Color(0xFF3D3D3D)
 val LightText = Color(0xFF6E6E6E)
