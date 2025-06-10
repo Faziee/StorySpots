@@ -9,18 +9,6 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 
-data class StoryData(
-    val id: String,
-    val title: String,
-    val createdAt: Timestamp?,
-    val location: GeoPoint?,
-    val caption: String?,
-    val imageUrl: String?,
-    val mapRef: DocumentReference?,
-    val authorRef: DocumentReference?,
-    val userPath: String? = null
-)
-
 fun DocumentSnapshot.toStoryData(): StoryData? {
     return try {
         val userField = get("user")

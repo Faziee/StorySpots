@@ -134,7 +134,7 @@ class LocationManager(private val context: Context) {
         )
     }
 
-    fun recenterOnUserLocation(mapView: MapView, zoom: Double = 15.0): Boolean {
+    fun recenterOnUserLocation(mapView: MapView?, zoom: Double = 15.0): Boolean {
         return currentLocation?.let { point ->
             enableFollowMode(mapView)
             centerOnLocation(mapView, point, zoom)
@@ -142,8 +142,8 @@ class LocationManager(private val context: Context) {
         } ?: false
     }
 
-    fun centerOnLocation(mapView: MapView, point: Point, zoom: Double = 15.0) {
-        mapView.camera.easeTo(
+    fun centerOnLocation(mapView: MapView?, point: Point, zoom: Double = 15.0) {
+        mapView!!.camera.easeTo(
             CameraOptions.Builder()
                 .center(point)
                 .zoom(zoom)
