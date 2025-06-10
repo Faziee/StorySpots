@@ -65,6 +65,7 @@ import com.storyspots.pin.SimpleClustering
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.post.PostStoryScreen
 import com.storyspots.pushNotification.NotificationPermissionHandler
+import com.storyspots.settings.SettingsScreen
 import com.storyspots.yourFeed.YourFeedScreen
 
 @OptIn(MapboxExperimental::class)
@@ -76,19 +77,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     private lateinit var mapView: MapView
     private var currentScreen by mutableStateOf("home")
-    
+
     private var selectedImageUri by mutableStateOf<Uri?>(null)
     private var currentUserLocation by mutableStateOf<Point?>(null)
     private var pendingImageSelection by mutableStateOf(false)
-
-    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
-        currentUserLocation = point
-//        centerMapOnUserLocation(mapView, point)
-    }
-
-    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
-        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
-    }
 
     private var pointAnnotationManager: PointAnnotationManager? = null
     private var contentInitialized = false
@@ -114,7 +106,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             permissionsManager = PermissionsManager(this)
             permissionsManager.requestLocationPermissions(this)
         }
-
     }
 
     private fun initializeContent() {
@@ -170,6 +161,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         when {
                             !locationPermissionGranted.value -> PermissionRequestScreen()
                             currentScreen == "notifications" -> NotificationFeedScreen()
+                            currentScreen == "your_feed" -> YourFeedScreen()
+                            currentScreen == "settings" -> SettingsScreen()
                             currentScreen == "create" -> {
                                 PostStoryScreen(
                                     onImageSelect = {
@@ -214,11 +207,8 @@ class MainActivity : ComponentActivity(), PermissionsListener {
     }
 
     private fun getCurrentLocation(): GeoPoint? {
-        return currentUserLocation?.let { point ->
-            val geoPoint = GeoPoint(point.latitude(), point.longitude())
-            geoPoint
-        } ?: run {
-            null
+        return locationManager.currentLocation?.let { point ->
+            GeoPoint(point.latitude(), point.longitude())
         }
     }
 
@@ -231,10 +221,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
 
     @Composable
     fun MapScreen() {
-        //This and (NAVIGATE TO LN 157) will be replaced by navbar later
         val showFeed = remember { mutableStateOf(false) }
-
-        //This is for the map captions
         val selectedPin = remember { mutableStateOf<Point?>(null) }
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
         var mapReady by remember { mutableStateOf(false) }
@@ -251,7 +238,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
                     MapView(context).also { mapView = it }.apply {
-
                         getMapboxMap().setCamera(
                             CameraOptions.Builder()
                                 .center(Point.fromLngLat(0.0, 0.0))
@@ -262,24 +248,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                         getMapboxMap().loadStyleUri(
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
-                            FirebaseFirestore.getInstance()
-                                .collection("story")
-                                .get()
-                                .addOnSuccessListener { documents ->
-                                    pointAnnotationManager?.deleteAll()
-
-                                    for (document in documents) {
-                                        val geoPoint = document.getGeoPoint("location") // assuming your field is named "location"
-                                        if (geoPoint != null) {
-                                            val point = Point.fromLngLat(geoPoint.longitude, geoPoint.latitude)
-                                            addPin(point)
-                                        }
-                                    }
-                                }
-                                .addOnFailureListener { e ->
-                                    Log.w(TAG, "Error fetching geo points", e)
-                                }
-
                             if (locationPermissionGranted.value) {
                                 setupLocationTracking()
                             }
@@ -292,8 +260,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 }
             )
 
-            if(mapReady && ::locationManager.isInitialized)
-            {
+            if(mapReady && ::locationManager.isInitialized) {
                 RecenterButton(
                     mapView = mapView,
                     locationManager = locationManager,
@@ -318,6 +285,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         locationManager.setupLocationComponent(
             mapView = mapView,
             onLocationUpdate = { point ->
+                currentUserLocation = point // Update the currentUserLocation state
             },
             centerOnFirstUpdate = true
         )
@@ -364,12 +332,11 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 currentScreen = "home"
                 Toast.makeText(this, "Home selected", Toast.LENGTH_SHORT).show()
             }
-            NavItem.Favourites -> {
-                currentScreen = "favorites"
-                Toast.makeText(this, "Favourites selected", Toast.LENGTH_SHORT).show()
+            NavItem.YourFeed -> {
+                currentScreen = "your_feed"
+                Toast.makeText(this, "Your Feed selected", Toast.LENGTH_SHORT).show()
             }
             NavItem.Notifications -> {
-                // Toggle between notifications and map
                 currentScreen = if (currentScreen == "notifications") "home" else "notifications"
             }
             NavItem.Settings -> {
@@ -380,7 +347,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 currentScreen = "create"
                 Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
             }
-
             else -> {}
         }
     }

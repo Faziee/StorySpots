@@ -20,7 +20,7 @@ import kotlin.math.abs
 class LocationManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
     private var moveListener: OnMoveListener? = null
-    private var currentLocation: Point? = null
+    internal var currentLocation: Point? = null
     private var hasCenteredOnFirstLocation = false
     private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
 

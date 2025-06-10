@@ -210,8 +210,8 @@ fun StoryCard(story: StoryData?) {
                         .height(200.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.ic_post),
-                    error = painterResource(R.drawable.ic_post)
+                    placeholder = painterResource(R.drawable.placeholder_image),
+                    error = painterResource(R.drawable.placeholder_image)
                 )
             }
 

@@ -51,48 +51,82 @@ class NotificationsViewModel : ViewModel() {
 
                 println("Query returned ${querySnapshot.documents.size} documents")
 
-                val notifications = querySnapshot.documents.mapNotNull { doc ->
+                val notifications = mutableListOf<NotificationItem>()
+
+                for (doc in querySnapshot.documents) {
                     try {
-                        val fromRef = doc.getDocumentReference("from") ?: return@mapNotNull null
-                        val toRef = doc.getDocumentReference("to") ?: return@mapNotNull null
-                        val storyRef = doc.getDocumentReference("story") ?: return@mapNotNull null
-                        val userId = fromRef.id
-                        val userDoc = db.collection("user").document(userId).get().await()
-                        println("User doc for $userId: ${userDoc.data}")
-                        val userName = userDoc.getString("username") ?: "Unknown User"
+                        println("Processing document: ${doc.id}")
+                        println("Document data: ${doc.data}")
 
-                        val imageUrl = userDoc.getString("profile_picture_url")
-                            ?: userDoc.getString("profileImageUrl")
-                            ?: userDoc.getString("profile_picture")
-                            ?: ""
+                        // Use document ID as the notification ID
+                        val notificationId = doc.id
 
-                        val storyId = storyRef.id
-                        val message = "$userName mentioned you in a story"
+                        // Get basic fields
+                        val createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date()
+                        val title = doc.getString("title") ?: "Notification"
+                        val message = doc.getString("message") ?: ""
+                        val read = doc.getBoolean("read") ?: false
 
-                        NotificationItem(
-                            id = doc.id,
-                            createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date(),
-                            from = userName,
-                            fromUserId = userId,
-                            read = doc.getBoolean("read") ?: false,
-                            story = storyRef.path,
-                            to = toRef.path,
-                            imageUrl = imageUrl,
-                            message = message
+                        // Handle fromUserId - could be from a reference or direct field
+                        var fromUserId = ""
+                        var imageUrl = ""
+
+                        val fromRef = doc.getDocumentReference("from")
+                        if (fromRef != null) {
+                            try {
+                                val userDoc = fromRef.get().await()
+                                fromUserId = userDoc.id
+                                imageUrl = userDoc.getString("profile_picture_url")
+                                    ?: userDoc.getString("profileImageUrl")
+                                            ?: userDoc.getString("profile_picture")
+                                            ?: ""
+                            } catch (e: Exception) {
+                                println("Error fetching user data: ${e.message}")
+                                fromUserId = doc.getString("fromUserId") ?: ""
+                            }
+                        } else {
+                            fromUserId = doc.getString("fromUserId") ?: ""
+                            imageUrl = doc.getString("imageUrl") ?: ""
+                        }
+
+                        // Handle story - could be from a reference or direct field
+                        var storyId = ""
+                        val storyRef = doc.getDocumentReference("story")
+                        if (storyRef != null) {
+                            storyId = storyRef.id
+                        } else {
+                            storyId = doc.getString("story") ?: ""
+                        }
+
+                        val notificationItem = NotificationItem(
+                            id = notificationId,
+                            createdAt = createdAt,
+                            title = title,
+                            message = message,
+                            read = read,
+                            fromUserId = fromUserId,
+                            story = storyId,
+                            imageUrl = imageUrl
                         )
+
+                        notifications.add(notificationItem)
+                        println("Successfully processed notification: $notificationItem")
+
                     } catch (e: Exception) {
                         println("Error processing notification ${doc.id}: ${e.message}")
-                        null
+                        e.printStackTrace()
                     }
                 }
 
-                println("Processed ${notifications.size} notifications: $notifications")
+                println("Processed ${notifications.size} notifications total")
 
                 val (new, lastWeek, lastMonth) = NotificationUtils.categorizeNotifications(notifications)
                 println("Categorized: New=${new.size}, LastWeek=${lastWeek.size}, LastMonth=${lastMonth.size}")
+
                 _newNotifications.value = new
                 _lastWeekNotifications.value = lastWeek
                 _lastMonthNotifications.value = lastMonth
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("Firestore fetch error: ${e.message}")

@@ -46,16 +46,16 @@ fun NotificationRow(
                 .background(Color.LightGray),
         contentAlignment = Alignment.Center
         ) {
+            val context = LocalContext.current
             if (!item.imageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(context)
                         .data(item.imageUrl)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "${item.from}'s profile picture",
+                    contentDescription = "${item.fromUserId}'s profile picture",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    onError = { Log.e("ImageLoading", "Failed to load image from ${item.imageUrl}", it.result.throwable) }
                 )
             } else {
                 Box(
@@ -63,7 +63,7 @@ fun NotificationRow(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = item.from.first().toString(),
+                        text = item.fromUserId.first().toString(),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -78,14 +78,14 @@ fun NotificationRow(
                 .padding(horizontal = 12.dp)
         ) {
             Text(
-                text = item.from,
+                text = item.fromUserId,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkText
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = item.message ?: item.from,
+                text = item.message ?: item.fromUserId,
                 fontSize = 14.sp,
                 color = LightText
             )

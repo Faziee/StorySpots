@@ -1,6 +1,6 @@
 package com.storyspots.caption
 
-//import StoryData
+import com.storyspots.caption.StoryData
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
-//import fetchAllStories
+import com.storyspots.caption.fetchAllStories
 import androidx.compose.foundation.background
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
