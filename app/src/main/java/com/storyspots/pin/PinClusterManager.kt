@@ -54,6 +54,12 @@ class SimpleClustering {
         fun setOnPinClickListener(listener: (Point) -> Unit) {
             onPinClickListener = listener
         }
+
+        fun clearPins() {
+            Log.d(TAG, "Clearing all pins")
+            pinData.clear()
+            instance?.updateData()
+        }
     }
 
     data class PinData(

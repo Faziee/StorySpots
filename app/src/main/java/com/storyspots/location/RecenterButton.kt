@@ -18,7 +18,7 @@ import com.storyspots.R
 
 @Composable
 fun RecenterButton(
-    mapView: MapView,
+    mapView: MapView?,
     locationManager: LocationManager,
     modifier: Modifier = Modifier,
     onRecenter: () -> Unit = {}

@@ -6,7 +6,6 @@ import NotificationFeedScreen
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.firebase.FirebaseApp
@@ -45,24 +43,19 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.plugin.LocationPuck2D
-import com.mapbox.maps.plugin.PuckBearing
-import com.mapbox.maps.plugin.animation.MapAnimationOptions
-import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
 import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListener
-import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
-import com.mapbox.maps.plugin.locationcomponent.location
 import com.storyspots.location.LocationManager
 import com.storyspots.location.RecenterButton
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 import com.storyspots.caption.DismissibleStoryStack
+import com.storyspots.caption.MapLoader
+import com.storyspots.caption.StoryData
 import com.storyspots.post.PostStoryScreen
 import com.storyspots.pushNotification.NotificationPermissionHandler
 import com.storyspots.settings.SettingsScreen
@@ -219,6 +212,10 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         }
     }
 
+    fun onStoryPosted() {
+        MapLoader.refreshStories()
+    }
+
     @Composable
     fun MapScreen() {
         val showFeed = remember { mutableStateOf(false) }
@@ -226,9 +223,14 @@ class MainActivity : ComponentActivity(), PermissionsListener {
         val pinScreenOffset = remember { mutableStateOf<Offset?>(null) }
         var mapReady by remember { mutableStateOf(false) }
 
+        var selectedStories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
+        var storyStackOffset by remember { mutableStateOf(Offset.Zero) }
+        var showStoryStack by remember { mutableStateOf(false) }
+        var mapView by remember { mutableStateOf<MapView?>(null) }
+
         LaunchedEffect(selectedPin.value) {
             selectedPin.value?.let { pin ->
-                val screenCoords = mapView.getMapboxMap().pixelForCoordinate(pin)
+                val screenCoords = mapView?.getMapboxMap()!!.pixelForCoordinate(pin)
                 pinScreenOffset.value = Offset(screenCoords.x.toFloat(), screenCoords.y.toFloat())
             }
         }
@@ -245,6 +247,7 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                                 .build()
                         )
 
+                        this@MainActivity.mapView = this
                         getMapboxMap().loadStyleUri(
                             "mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag"
                         ) {
@@ -255,6 +258,19 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                             setupMapGestures()
                             setupAnnotations(context)
                             mapReady = true
+
+                            MapLoader.initialize(this)
+                            MapLoader.loadAllStories { allStories ->
+                                Log.d("MainScreen", "Loaded ${allStories.size} stories")
+                            }
+
+                            MapLoader.setOnPinClickListener { storiesAtPin, offset ->
+                                selectedStories = storiesAtPin
+                                storyStackOffset = offset
+                                showStoryStack = true
+                            }
+
+                            onStoryPosted()
                         }
                     }
                 }
@@ -270,13 +286,15 @@ class MainActivity : ComponentActivity(), PermissionsListener {
                 )
             }
 
-            selectedPin.value?.let { pin ->
-                pinScreenOffset.value?.let { offset ->
-                    DismissibleStoryStack(
-                        offset = offset,
-                        onDismiss = { selectedPin.value = null }
-                    )
-                }
+            if (showStoryStack && selectedStories.isNotEmpty()) {
+                DismissibleStoryStack(
+                    stories = selectedStories,
+                    offset = storyStackOffset,
+                    onDismiss = {
+                        showStoryStack = false
+                        selectedStories = emptyList()
+                    }
+                )
             }
         }
     }
