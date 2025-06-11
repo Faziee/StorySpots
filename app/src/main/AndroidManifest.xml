@@ -34,7 +34,7 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".core.composables.StorySpotsMainActivity"
             android:exported="true"
             android:theme="@style/Theme.StorySpots">
         </activity>

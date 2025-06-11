@@ -19,17 +19,6 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.storyspots.Initialise
 
 public class LocationComponentActivity : ComponentActivity() {
-    //TODO: Re-centering issue source?
-    private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener { point ->
-        centerMapOnUserLocation(mapView, point)
-    }
-
-    //TODO: Re-centering issue source?
-    private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener { bearing ->
-        mapView.mapboxMap.setCamera(CameraOptions.Builder().bearing(bearing).build())
-    }
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -47,45 +36,6 @@ public class LocationComponentActivity : ComponentActivity() {
                     }
                     mapViewportState.transitionToFollowPuckState()
                 }
-            }
-        }
-    }
-
-    //TODO: Map Control
-    private fun centerMapOnUserLocation(mapView: MapView, point: Point) {
-        mapView.camera.easeTo(
-            CameraOptions.Builder()
-                .center(point)
-                .zoom(15.0)
-                .build(),
-            MapAnimationOptions.mapAnimationOptions {
-                duration(1000)
-            }
-        )
-    }
-
-    //TODO: Map Control
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::mapView.isInitialized) {
-            mapView.location.removeOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)
-            mapView.location.removeOnIndicatorBearingChangedListener(onIndicatorBearingChangedListener)
-        }
-    }
-
-    //TODO: Map Re-centering issue source?
-    fun enableLocationComponent(mapView: MapView) {
-        Initialise().mapLocationSettings(mapView)
-
-        mapView.location.addOnIndicatorPositionChangedListener { point ->
-            if (point.latitude() != 0.0 && point.longitude() != 0.0) {
-                mapView.camera.easeTo(
-                    CameraOptions.Builder()
-                        .center(point)
-                        .zoom(15.0)
-                        .build(),
-                    MapAnimationOptions.mapAnimationOptions { duration(1000) }
-                )
             }
         }
     }
