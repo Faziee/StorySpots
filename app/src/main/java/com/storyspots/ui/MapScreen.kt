@@ -1,6 +1,7 @@
 package com.storyspots.ui
 
 import android.annotation.SuppressLint
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -14,6 +15,8 @@ import com.mapbox.maps.MapInitOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
 import androidx.compose.ui.geometry.Offset
+import com.mapbox.maps.plugin.annotation.annotations
+import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.storyspots.cache.StoryCache
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.caption.MapLoader
@@ -23,43 +26,64 @@ import com.storyspots.caption.toStoryData
 import com.storyspots.core.AppComponents
 import com.storyspots.core.managers.LocationsManager
 import com.storyspots.location.RecenterButton
+import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@SuppressLint("Lifecycle")
 @Composable
 fun MapScreen() {
-    // Use rememberSaveable to preserve state across navigation
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var mapReady by remember { mutableStateOf(false) }
     var showStoryStack by remember { mutableStateOf(false) }
     var selectedStories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
     var storyStackOffset by remember { mutableStateOf(Offset.Zero) }
-    var storiesLoaded by remember { mutableStateOf(false) }
-
+    val mapInstanceId = remember { System.currentTimeMillis().toInt() }
     val context = LocalContext.current
 
-    // Load stories when map is ready and stories haven't been loaded yet
-    LaunchedEffect(mapReady) {
-        if (mapReady && !storiesLoaded) {
-            withContext(Dispatchers.IO) {
-                val cachedStories = AppComponents.storyCache.getCachedStories()
+    LaunchedEffect(mapReady, mapView) {
+        if (mapReady && mapView != null) {
+            Log.d("MapScreen", "Map ready, loading stories for instance $mapInstanceId")
+            var attempts = 0
+            while (!SimpleClustering.isClusteringInitialized() && attempts < 10) {
+                Log.d("MapScreen", "Waiting for clustering to initialize... attempt ${attempts + 1}")
+                kotlinx.coroutines.delay(100)
+                attempts++
+            }
 
-                withContext(Dispatchers.Main) {
-                    if (cachedStories.isNotEmpty()) {
-                        Log.d("MapScreen", "Using ${cachedStories.size} cached stories")
-                        updateMapWithStories(mapView, cachedStories)
-                        storiesLoaded = true
-                    }
-                }
+            Log.d("MapScreen", "Clustering initialized: ${SimpleClustering.isClusteringInitialized()}")
 
-                // Always try to load fresh data
-                loadStoriesFromNetwork(mapView) {
-                    storiesLoaded = true
-                }
+            val resourceId = context.resources.getIdentifier("pin_marker", "drawable", context.packageName)
+            Log.d("MapScreen", "Pin marker resource ID: $resourceId (0 means not found)")
+
+            if (!SimpleClustering.isClusteringInitialized()) {
+                Log.e("MapScreen", "Clustering failed to initialize after waiting")
+                return@LaunchedEffect
+            }
+
+            val currentStoriesCount = AppComponents.mapStateManager.getStoriesCount()
+            Log.d("MapScreen", "Current stories count: $currentStoriesCount")
+
+            if (currentStoriesCount > 0) {
+                Log.d("MapScreen", "Using existing stories from MapStateManager: $currentStoriesCount")
+                AppComponents.mapStateManager.showPinsOnMap(mapInstanceId)
+            } else {
+                Log.d("MapScreen", "No stories in memory, loading from cache/network")
+                loadStoriesForMap(mapInstanceId)
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        Log.d("MapScreen", "MapScreen created/recreated")
+        mapReady = false
+
+        onDispose {
+            Log.d("MapScreen", "MapScreen disposed")
+            mapView?.let { view ->
+                AppComponents.locationManager.cleanup(view)
             }
         }
     }
@@ -68,18 +92,21 @@ fun MapScreen() {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
+                Log.d("MapScreen", "Creating new MapView instance")
                 val mapInitOptions = MapInitOptions(context = ctx)
                 MapView(ctx, mapInitOptions).also { map ->
                     mapView = map
                     map.getMapboxMap().loadStyleUri("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") { style ->
                         AppComponents.appScope.launch {
                             if (!map.isDestroyed) {
+                                Log.d("MapScreen", "Style loaded, initializing map")
                                 initializeMapAsync(map, style) { storiesAtPin, offset ->
                                     selectedStories = storiesAtPin
                                     storyStackOffset = offset
                                     showStoryStack = true
                                 }
                                 mapReady = true
+                                Log.d("MapScreen", "Map marked as ready")
                             }
                         }
                     }
@@ -140,39 +167,103 @@ private suspend fun initializeMapAsync(
     onPinClick: (List<StoryData>, Offset) -> Unit
 ) = withContext(Dispatchers.Default) {
     try {
+        Log.d("MapScreen", "Starting map initialization")
+
         withContext(Dispatchers.Main) {
+            // Setup location component
             AppComponents.locationManager.setupLocationComponent(
                 mapView = mapView,
                 onLocationUpdate = { /* Handle updates */ },
                 centerOnFirstUpdate = true
             )
-        }
 
-        // Initialize the map manager
-        AppComponents.mapManager.initializeMap(mapView)
+            // Initialize the map manager for this new instance
+            AppComponents.mapManager.initializeMap(mapView)
 
-        // Initialize MapLoader with the mapView
-        withContext(Dispatchers.Main) {
+            // Initialize MapLoader
             MapLoader.initialize(mapView)
 
-            // Set up the pin click listener
-            MapLoader.setOnPinClickListener(onPinClick)
+            Log.d("MapScreen", "About to initialize clustering")
 
-            // Load stories
-            MapLoader.loadAllStories { allStories ->
-                Log.d("MapScreen", "Loaded ${allStories.size} stories via MapLoader")
+            // Initialize clustering directly here (don't call MapStateManager method to avoid duplication)
+            val context = mapView.context
+            val resourceId = context.resources.getIdentifier("pin_marker", "drawable", context.packageName)
+            if (resourceId != 0) {
+                val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
+                if (bitmap != null) {
+                    val annotationApi = mapView.annotations
+                    val pointAnnotationManager = annotationApi.createPointAnnotationManager()
+
+                    SimpleClustering.setupClustering(mapView, pointAnnotationManager, bitmap)
+                    ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins")
+                    Log.d("MapScreen", "Clustering setup completed")
+                } else {
+                    Log.e("MapScreen", "Failed to decode pin_marker bitmap")
+                }
+            } else {
+                Log.e("MapScreen", "pin_marker drawable not found")
+            }
+
+            // Wait a moment for clustering to be fully set up
+            kotlinx.coroutines.delay(300)
+
+            Log.d("MapScreen", "Clustering initialized after setup: ${SimpleClustering.isClusteringInitialized()}")
+
+            // Set up direct pin click handling through SimpleClustering
+            SimpleClustering.setOnPinClickListener { clickedPoint ->
+                Log.d("MapScreen", "Pin clicked at: ${clickedPoint.latitude()}, ${clickedPoint.longitude()}")
+                // Find stories at the clicked location
+                val storiesAtLocation = AppComponents.mapStateManager.currentStories.value.filter { story ->
+                    story.location?.let { geoPoint ->
+                        val distance = calculateDistance(clickedPoint, geoPoint)
+                        distance < 0.0001
+                    } ?: false
+                }
+
+                Log.d("MapScreen", "Pin clicked: found ${storiesAtLocation.size} stories at location")
+
+                if (storiesAtLocation.isNotEmpty()) {
+                    val offset = convertPointToOffsetWithPadding(clickedPoint, mapView, 80f)
+                    onPinClick(storiesAtLocation, offset)
+                }
             }
         }
+
+        Log.d("MapScreen", "Map initialization completed")
 
     } catch (e: Exception) {
         Log.e("MapScreen", "Map initialization failed", e)
     }
 }
 
-private suspend fun loadStoriesFromNetwork(mapView: MapView?, onComplete: () -> Unit = {}) = withContext(Dispatchers.IO) {
+private fun calculateDistance(point: com.mapbox.geojson.Point, geoPoint: com.google.firebase.firestore.GeoPoint): Double {
+    val latDiff = point.latitude() - geoPoint.latitude
+    val lngDiff = point.longitude() - geoPoint.longitude
+    return kotlin.math.sqrt(latDiff * latDiff + lngDiff * lngDiff)
+}
+
+private fun convertPointToOffsetWithPadding(point: com.mapbox.geojson.Point, mapView: MapView, yPadding: Float = 100f): Offset {
+    val screenCoordinate = mapView.mapboxMap.pixelForCoordinate(point)
+    return Offset(
+        x = screenCoordinate.x.toFloat(),
+        y = screenCoordinate.y.toFloat() - yPadding
+    )
+}
+
+private suspend fun loadStoriesForMap(mapInstanceId: Int) = withContext(Dispatchers.IO) {
     try {
+        Log.d("MapScreen", "Loading stories for map instance $mapInstanceId")
+
+        val cachedStories = AppComponents.storyCache.getCachedStories()
+        if (cachedStories.isNotEmpty()) {
+            Log.d("MapScreen", "Using ${cachedStories.size} cached stories")
+            withContext(Dispatchers.Main) {
+                AppComponents.mapStateManager.updateStories(cachedStories)
+                AppComponents.mapStateManager.showPinsOnMap(mapInstanceId)
+            }
+        }
+
         AppComponents.firestore?.let { firestore ->
-            // Get stories from Firestore
             firestore.collection("story")
                 .orderBy("created_at", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(50)
@@ -181,44 +272,20 @@ private suspend fun loadStoriesFromNetwork(mapView: MapView?, onComplete: () -> 
                     val fetchedStories = snapshot.documents.mapNotNull { it.toStoryData() }
                     Log.d("MapScreen", "Loaded ${fetchedStories.size} stories from Firestore")
 
-                    // Cache the stories
                     AppComponents.appScope.launch {
                         AppComponents.storyCache.cacheStories(fetchedStories)
 
-                        // Update map with stories - this will trigger pin updates via MapLoader
                         withContext(Dispatchers.Main) {
-                            updateMapWithStories(mapView, fetchedStories)
-                            onComplete()
+                            AppComponents.mapStateManager.updateStories(fetchedStories)
+                            AppComponents.mapStateManager.refreshPins(mapInstanceId)
                         }
                     }
                 }
                 .addOnFailureListener { e ->
                     Log.e("MapScreen", "Failed to load stories from Firestore", e)
-                    onComplete()
                 }
         }
     } catch (e: Exception) {
         Log.e("MapScreen", "Failed to load stories", e)
-        onComplete()
-    }
-}
-
-private fun updateMapWithStories(mapView: MapView?, stories: List<StoryData>) {
-    mapView?.let { map ->
-        Log.d("MapScreen", "Updating map with ${stories.size} stories")
-
-        // Clear existing pins
-        SimpleClustering.clearPins()
-
-        // Add story pins to map
-        stories.forEach { story ->
-            story.location?.let { geoPoint ->
-                val point = Point.fromLngLat(geoPoint.longitude, geoPoint.latitude)
-                SimpleClustering.addClusterPin(point)
-                Log.d("MapScreen", "Added pin at: ${geoPoint.latitude}, ${geoPoint.longitude}")
-            }
-        }
-
-        Log.d("MapScreen", "Map updated with ${stories.size} story pins")
     }
 }

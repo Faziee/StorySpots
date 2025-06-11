@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.storyspots.cache.StoryCache
 import com.storyspots.core.managers.*
 import com.storyspots.services.cloudinary.CloudinaryService
+import com.storyspots.caption.toStoryData
 import kotlinx.coroutines.*
 import kotlin.getValue
 
@@ -40,6 +41,9 @@ object AppComponents {
         MapManager()
     }
 
+    // Map state manager for persistent pin management
+    val mapStateManager = MapStateManager
+
     val storyCache: StoryCache by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         StoryCache(StorySpot.instance)
     }
@@ -49,15 +53,50 @@ object AppComponents {
         CloudinaryService(StorySpot.instance)
     }
 
-    // Firebase instances - wait for initialization
     val auth: FirebaseAuth?
         get() = if (StorySpot.isFirebaseReady) FirebaseAuth.getInstance() else null
 
     val firestore: FirebaseFirestore?
         get() = if (StorySpot.isFirebaseReady) FirebaseFirestore.getInstance() else null
 
-    // Cleanup method
     fun cleanup() {
         appScope.cancel()
+    }
+
+    // Helper method to refresh stories globally
+    fun refreshStories() {
+        appScope.launch {
+            try {
+                firestore?.let { db ->
+                    db.collection("story")
+                        .orderBy("created_at", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                        .limit(50)
+                        .get()
+                        .addOnSuccessListener { snapshot ->
+                            val stories = snapshot.documents.mapNotNull { doc ->
+                                try {
+                                    doc.toStoryData()
+                                } catch (e: Exception) {
+                                    Log.e("AppComponents", "Error converting document", e)
+                                    null
+                                }
+                            }
+
+                            appScope.launch {
+                                storyCache.cacheStories(stories)
+                                mapStateManager.updateStories(stories)
+                                mapStateManager.refreshPins(System.currentTimeMillis().toInt())
+
+                                Log.d("AppComponents", "Stories refreshed: ${stories.size} stories")
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("AppComponents", "Failed to refresh stories", e)
+                        }
+                }
+            } catch (e: Exception) {
+                Log.e("AppComponents", "Error refreshing stories", e)
+            }
+        }
     }
 }

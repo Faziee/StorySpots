@@ -5,6 +5,7 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.serialization.Serializable
+import java.io.Serializable as JavaSerializable
 
 data class StoryData(
     val id: String,
@@ -16,7 +17,19 @@ data class StoryData(
     val mapRef: DocumentReference?,
     val authorRef: DocumentReference?,
     val userPath: String?
-)
+) {
+    fun toCached(): CachedStoryData = CachedStoryData(
+        id = id,
+        title = title,
+        createdAt = createdAt?.seconds,
+        location = location?.let { Pair(it.latitude, it.longitude) },
+        caption = caption,
+        imageUrl = imageUrl,
+        mapRefPath = mapRef?.path,
+        authorRefPath = authorRef?.path,
+        userPath = userPath
+    )
+}
 
 @Serializable
 data class CachedStoryData(
@@ -29,28 +42,21 @@ data class CachedStoryData(
     val mapRefPath: String?,
     val authorRefPath: String?,
     val userPath: String?
-)
+) : JavaSerializable {
 
-fun StoryData.toCached(): CachedStoryData = CachedStoryData(
-    id = id,
-    title = title,
-    createdAt = createdAt?.seconds,
-    location = location?.let { Pair(it.latitude, it.longitude) },
-    caption = caption,
-    imageUrl = imageUrl,
-    mapRefPath = mapRef?.path,
-    authorRefPath = authorRef?.path,
-    userPath = userPath
-)
+    companion object {
+        private const val serialVersionUID: Long = 1L
+    }
 
-fun CachedStoryData.toStoryData(): StoryData = StoryData(
-    id = id,
-    title = title,
-    createdAt = createdAt?.let { Timestamp(it, 0) },
-    location = location?.let { GeoPoint(it.first, it.second) },
-    caption = caption,
-    imageUrl = imageUrl,
-    mapRef = mapRefPath?.let { FirebaseFirestore.getInstance().document(it) },
-    authorRef = authorRefPath?.let { FirebaseFirestore.getInstance().document(it) },
-    userPath = userPath
-)
+    fun toStoryData(): StoryData = StoryData(
+        id = id,
+        title = title,
+        createdAt = createdAt?.let { Timestamp(it, 0) },
+        location = location?.let { GeoPoint(it.first, it.second) },
+        caption = caption,
+        imageUrl = imageUrl,
+        mapRef = mapRefPath?.let { FirebaseFirestore.getInstance().document(it) },
+        authorRef = authorRefPath?.let { FirebaseFirestore.getInstance().document(it) },
+        userPath = userPath
+    )
+}

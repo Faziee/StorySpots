@@ -7,7 +7,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
-import com.mapbox.geojson.Point
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -26,7 +25,6 @@ import com.storyspots.post.PostStoryScreen
 import com.storyspots.settings.SettingsScreen
 import com.storyspots.ui.MapScreen
 import com.storyspots.yourFeed.YourFeedScreen
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun StorySpotsApp() {
@@ -122,9 +120,9 @@ fun StorySpotsApp() {
                                 "Story posted successfully!",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            // Clear the selected image and go back to home
                             AppComponents.imageSelectionManager.clearSelection()
                             AppComponents.navigationManager.navigateToHome()
+                            AppComponents.refreshStories()
                         },
                         getLocation = {
                             val currentLocation = AppComponents.locationManager.currentLocation.value

@@ -31,8 +31,19 @@ class SimpleClustering {
 
         fun setupClustering(mapView: MapView, pointAnnotationManager: PointAnnotationManager, pinBitmap: Bitmap) {
             Log.d(TAG, "Setting up clustering...")
+            Log.d(TAG, "Current isInitialized state: $isInitialized")
+            Log.d(TAG, "Current pin data count: ${pinData.size}")
+
+            if (isInitialized && instance?.mapView == mapView) {
+                Log.d(TAG, "Clustering already initialized for this MapView, skipping")
+                return
+            }
+
+            isInitialized = false
+
             if (instance == null) {
                 instance = SimpleClustering()
+                Log.d(TAG, "Created new SimpleClustering instance")
             }
             instance?.initialize(mapView, pointAnnotationManager, pinBitmap)
         }
@@ -60,6 +71,13 @@ class SimpleClustering {
             pinData.clear()
             instance?.updateData()
         }
+
+        fun refreshPins() {
+            Log.d(TAG, "Refreshing pins with existing data: ${pinData.size}")
+            instance?.updateData()
+        }
+
+        fun isClusteringInitialized(): Boolean = isInitialized
     }
 
     data class PinData(
@@ -73,11 +91,6 @@ class SimpleClustering {
     private var pinBitmap: Bitmap? = null
 
     private fun initialize(mapView: MapView, pointAnnotationManager: PointAnnotationManager, pinBitmap: Bitmap) {
-        if (isInitialized) {
-            Log.d(TAG, "Already initialized")
-            return
-        }
-
         this.mapView = mapView
         this.pointAnnotationManager = pointAnnotationManager
         this.pinBitmap = pinBitmap
@@ -94,6 +107,27 @@ class SimpleClustering {
                 }
                 """.trimIndent()
 
+                var sourceRemoved = false
+                try {
+                    val existingSource = style.getSource(SOURCE_ID)
+                    if (existingSource != null) {
+                        listOf("cluster-circles", "cluster-text", "unclustered-pins").forEach { layerId ->
+                            try {
+                                style.removeStyleLayer(layerId)
+                                Log.d(TAG, "Removed existing layer: $layerId")
+                            } catch (e: Exception) {
+                                Log.d(TAG, "Layer $layerId doesn't exist: ${e.message}")
+                            }
+                        }
+
+                        style.removeStyleSource(SOURCE_ID)
+                        Log.d(TAG, "Removed existing source")
+                        sourceRemoved = true
+                    }
+                } catch (e: Exception) {
+                    Log.d(TAG, "No existing source to remove: ${e.message}")
+                }
+
                 val source = GeoJsonSource.Builder(SOURCE_ID)
                     .data(emptyGeoJson)
                     .cluster(true)
@@ -102,7 +136,17 @@ class SimpleClustering {
                     .build()
 
                 style.addSource(source)
-                Log.d(TAG, "Source added")
+                Log.d(TAG, "Source added successfully")
+
+                // Remove existing layers if they exist (shouldn't be needed after source removal, but just in case)
+                listOf("cluster-circles", "cluster-text", "unclustered-pins").forEach { layerId ->
+                    try {
+                        style.removeStyleLayer(layerId)
+                        Log.d(TAG, "Removed remaining layer: $layerId")
+                    } catch (e: Exception) {
+                        Log.d(TAG, "Layer $layerId doesn't exist: ${e.message}")
+                    }
+                }
 
                 val clusterLayer = CircleLayer("cluster-circles", SOURCE_ID)
                 clusterLayer.filter(Expression.has(Expression.literal("point_count")))
@@ -132,6 +176,13 @@ class SimpleClustering {
                 style.addLayer(pinLayer)
                 Log.d(TAG, "Pin layer added")
 
+                try {
+                    style.removeStyleImage("pin-marker")
+                    Log.d(TAG, "Removed existing pin-marker image")
+                } catch (e: Exception) {
+                    Log.d(TAG, "No existing pin-marker image to remove: ${e.message}")
+                }
+
                 style.addImage("pin-marker", pinBitmap)
                 Log.d(TAG, "Pin bitmap added to style")
 
@@ -139,10 +190,18 @@ class SimpleClustering {
                 setupPinClickListener(mapView)
 
                 isInitialized = true
-                Log.d(TAG, "Clustering initialization complete!")
+                Log.d(TAG, "Clustering initialization complete! Initialized: $isInitialized")
+
+                if (pinData.isNotEmpty()) {
+                    Log.d(TAG, "Updating with existing ${pinData.size} pins")
+                    updateData()
+                } else {
+                    Log.d(TAG, "No existing pin data to update")
+                }
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing clustering", e)
+                isInitialized = false
             }
         }
     }
@@ -201,8 +260,6 @@ class SimpleClustering {
                         "features": [${features.joinToString(",")}]
                     }
                     """.trimIndent()
-
-//                    Log.d(TAG, "Generated GeoJSON: $geoJsonString")
 
                     source.data(geoJsonString)
                     Log.d(TAG, "Data updated successfully")
