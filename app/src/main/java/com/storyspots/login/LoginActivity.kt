@@ -7,9 +7,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyspots.MainActivity
+import com.storyspots.core.composables.StorySpotsMainActivity
 import com.storyspots.register.RegisterActivity
 
 class LoginActivity : ComponentActivity() {
+//    private val intentClass = MainActivity::class.java
+    private val intentClass = StorySpotsMainActivity::class.java
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -18,21 +22,21 @@ class LoginActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsState()
 
             // Comment out for always log in testing
-//            LaunchedEffect(uiState.isLoggedIn) {
-//                if (uiState.isLoggedIn) {
-//                    startActivity(Intent(this@LoginActivity, MainActivity::class.java))
-//                    finish()
-//                }
-//            }
+            LaunchedEffect(uiState.isLoggedIn) {
+                if (uiState.isLoggedIn) {
+                    startActivity(Intent(this@LoginActivity, intentClass))
+                    finish()
+                }
+            }
 
             LoginScreen(
                 viewModel = viewModel,
                 onLoginSuccess = {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    startActivity(Intent(this, intentClass))
                     finish()
                 },
                 onNavigateToRegister = {
-                    startActivity(Intent(this, RegisterActivity::class.java))
+                    startActivity(Intent(this, intentClass))
                 }
             )
         }
