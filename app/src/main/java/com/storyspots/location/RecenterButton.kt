@@ -15,11 +15,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.mapbox.maps.MapView
 import com.storyspots.R
+import com.storyspots.core.managers.LocationsManager
 
 @Composable
 fun RecenterButton(
     mapView: MapView?,
-    locationManager: com.storyspots.location.LocationManager,
+    locationManager: LocationsManager,
     modifier: Modifier = Modifier,
     onRecenter: () -> Unit = {}
 ) {

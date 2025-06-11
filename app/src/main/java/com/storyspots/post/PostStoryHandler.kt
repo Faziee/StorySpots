@@ -1,10 +1,11 @@
-package com.storyspots.services.post
+package com.storyspots.post
 
 import android.content.Context
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
+import com.storyspots.core.AppComponents
 import com.storyspots.services.cloudinary.CloudinaryService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,8 +17,7 @@ import kotlinx.coroutines.flow.collect
 import java.util.*
 
 class PostStoryHandler(private val context: Context) {
-
-    private val cloudinaryService = CloudinaryService(context)
+    private val cloudinaryService = AppComponents.cloudinaryService
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 

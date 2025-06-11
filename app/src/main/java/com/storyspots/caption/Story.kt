@@ -34,7 +34,7 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
             imageUrl = getString("image_url"),
             mapRef = getDocumentReference("map"),
             authorRef = authorRef,
-            userPath = userField as? String // Store the original string path too
+            userPath = userField as? String
         )
     } catch (e: Exception) {
         Log.e("StoryBox", "Error converting document to StoryData: ${e.message}")
@@ -45,6 +45,7 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
 
 fun fetchAllStories(limit: Long = 50, onResult: (List<StoryData>) -> Unit): ListenerRegistration {
     val db = FirebaseFirestore.getInstance()
+    Log.d("Story", "Starting to fetch stories from Firestore...")
 
     return db.collection("story")
         .orderBy("created_at", Query.Direction.DESCENDING)
@@ -56,47 +57,15 @@ fun fetchAllStories(limit: Long = 50, onResult: (List<StoryData>) -> Unit): List
                 return@addSnapshotListener
             }
 
-            val stories = snapshot?.documents?.mapNotNull { it.toStoryData() } ?: emptyList()
-            onResult(stories)
-        }
-}
+            Log.d("Story", "Firestore returned ${snapshot?.size()} documents")
+            val stories = snapshot?.documents?.mapNotNull { doc ->
+                Log.d("Story", "Processing document: ${doc.id}")
+                doc.toStoryData()?.also {
+                    Log.d("Story", "Successfully converted: ${it.title} at ${it.location}")
+                }
+            } ?: emptyList()
 
-fun fetchStoriesByMap(mapId: String, limit: Long = 50, onResult: (List<StoryData>) -> Unit) {
-    val db = FirebaseFirestore.getInstance()
-    val mapRef = db.collection("map").document(mapId)
-
-    db.collection("story")
-        .whereEqualTo("map", mapRef)
-        .limit(limit)
-        .addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.e("StoryBox", "Real-time fetch failed", e)
-                onResult(emptyList())
-                return@addSnapshotListener
-            }
-
-            val stories = snapshot?.documents?.mapNotNull { it.toStoryData() } ?: emptyList()
-            onResult(stories)
-        }
-}
-
-fun fetchStoriesByGeoPoint(mapId: String, geoPoint: GeoPoint, limit: Long = 50, onResult: (List<StoryData>) -> Unit) {
-    val db = FirebaseFirestore.getInstance()
-    val mapRef = db.collection("map").document(mapId)
-
-    db.collection("story")
-        .whereEqualTo("map", mapRef)
-        .whereEqualTo("location_lat", geoPoint.latitude)
-        .whereEqualTo("location_lng", geoPoint.longitude)
-        .limit(limit)
-        .addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.e("StoryBox", "Real-time fetch by geopoint failed", e)
-                onResult(emptyList())
-                return@addSnapshotListener
-            }
-
-            val stories = snapshot?.documents?.mapNotNull { it.toStoryData() } ?: emptyList()
+            Log.d("Story", "Final stories list: ${stories.size} stories")
             onResult(stories)
         }
 }

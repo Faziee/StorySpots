@@ -415,14 +415,14 @@ fun fetchUserStories(onResult: (List<StoryData>, String?) -> Unit): ListenerRegi
         .addOnSuccessListener { allStories ->
             Log.d(TAG, "=== ALL STORIES DEBUG ===")
             Log.d(TAG, "Total stories in database: ${allStories.size()}")
-            allStories.documents.forEach { doc ->
-                Log.d(TAG, "Story ID: ${doc.id}")
-                Log.d(TAG, "  User field: '${doc.get("user")}'")
-                Log.d(TAG, "  Title: '${doc.get("title")}'")
-                Log.d(TAG, "  Image URL: '${doc.get("imageUrl")}'")
-                Log.d(TAG, "  Created: ${doc.get("created_at")}")
-                Log.d(TAG, "  Matches current user: ${doc.get("user") == userPath}")
-            }
+//            allStories.documents.forEach { doc ->
+//                Log.d(TAG, "Story ID: ${doc.id}")
+//                Log.d(TAG, "  User field: '${doc.get("user")}'")
+//                Log.d(TAG, "  Title: '${doc.get("title")}'")
+//                Log.d(TAG, "  Image URL: '${doc.get("imageUrl")}'")
+//                Log.d(TAG, "  Created: ${doc.get("created_at")}")
+//                Log.d(TAG, "  Matches current user: ${doc.get("user") == userPath}")
+//            }
             Log.d(TAG, "=== END ALL STORIES DEBUG ===")
         }
 

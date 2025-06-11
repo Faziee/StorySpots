@@ -44,9 +44,10 @@ object AppComponents {
         StoryCache(StorySpot.instance)
     }
 
-    // Services - only created when needed
-    val cloudinaryService: CloudinaryService
-        get() = CloudinaryService(StorySpot.instance)
+    // Services - lazy initialized singleton to prevent multiple initializations
+    val cloudinaryService: CloudinaryService by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        CloudinaryService(StorySpot.instance)
+    }
 
     // Firebase instances - wait for initialization
     val auth: FirebaseAuth?

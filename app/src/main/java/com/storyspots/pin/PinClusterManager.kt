@@ -125,7 +125,7 @@ class SimpleClustering {
 
                 val pinLayer = SymbolLayer("unclustered-pins", SOURCE_ID)
                 pinLayer.filter(Expression.not(Expression.has(Expression.literal("point_count"))))
-                pinLayer.iconImage(Expression.literal("pin-marker")) // We'll add this image
+                pinLayer.iconImage(Expression.literal("pin-marker"))
                 pinLayer.iconSize(Expression.literal(0.1))
                 pinLayer.iconAllowOverlap(Expression.literal(true))
 
@@ -202,7 +202,7 @@ class SimpleClustering {
                     }
                     """.trimIndent()
 
-                    Log.d(TAG, "Generated GeoJSON: $geoJsonString")
+//                    Log.d(TAG, "Generated GeoJSON: $geoJsonString")
 
                     source.data(geoJsonString)
                     Log.d(TAG, "Data updated successfully")

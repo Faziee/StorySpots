@@ -25,9 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.GeoPoint
 import com.storyspots.R
-import com.storyspots.services.post.PostStoryHandler
-
-//import com.storyspots.services.post.PostStoryHandler
+import com.storyspots.post.PostStoryHandler
 
 @Composable
 fun PostStoryScreen(
@@ -35,7 +33,7 @@ fun PostStoryScreen(
     selectedImageUri: Uri? = null,
     onPostSuccess: () -> Unit = {},
     modifier: Modifier = Modifier,
-    getLocation: ()-> GeoPoint?= {null},
+    getLocation: () -> GeoPoint? = { null },
     userId: String? = null
 ) {
     var title by remember { mutableStateOf("") }
@@ -43,7 +41,7 @@ fun PostStoryScreen(
 
     val context = LocalContext.current
     val postHandler = remember { PostStoryHandler(context) }
-    val postState by postHandler.postState.collectAsState()
+    val postState = postHandler.postState.collectAsState().value
 
     val brightPink = Color(0xFFFF9CC7)
     val lightGray = Color(0xFFF5F5F5)
@@ -57,8 +55,13 @@ fun PostStoryScreen(
     LaunchedEffect(postState) {
         when (postState) {
             is PostStoryHandler.PostState.Success -> {
+                Log.d("PostStoryScreen", "Post successful!")
                 onPostSuccess()
                 postHandler.resetState()
+            }
+            is PostStoryHandler.PostState.Error -> {
+                val errorState = postState as? PostStoryHandler.PostState.Error
+                Log.e("PostStoryScreen", "Post error: ${errorState?.message}")
             }
             else -> { /* Handle other states as needed */ }
         }
@@ -183,7 +186,7 @@ fun PostStoryScreen(
                 )
             }
             is PostStoryHandler.PostState.ImageUploadProgress -> {
-                val progress = (postState as PostStoryHandler.PostState.ImageUploadProgress).bytes.toFloat() / (postState as PostStoryHandler.PostState.ImageUploadProgress).totalBytes.toFloat()
+                val progress = postState.bytes.toFloat() / postState.totalBytes.toFloat()
                 LinearProgressIndicator(
                     progress = progress,
                     modifier = Modifier.fillMaxWidth(),
@@ -208,7 +211,7 @@ fun PostStoryScreen(
             }
             is PostStoryHandler.PostState.Error -> {
                 Text(
-                    text = (postState as PostStoryHandler.PostState.Error).message,
+                    text = postState.message,
                     color = Color.Red,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -221,6 +224,7 @@ fun PostStoryScreen(
         Button(
             onClick = {
                 val currentLocation = getLocation()
+                Log.d("PostStoryScreen", "Creating post with location: $currentLocation")
 
                 postHandler.createPost(
                     title = title,

@@ -26,12 +26,11 @@ class MapManager {
         setupMapGestures()
         setupAnnotations()
 
-        // Initialize MapLoader
         MapLoader.initialize(mapView)
 
         // Set up pin click listener
         MapLoader.setOnPinClickListener { storiesAtPin, offset ->
-            // Handle pin clicks
+            // TODO: Handle pin clicks
         }
     }
 

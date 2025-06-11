@@ -1,6 +1,3 @@
-// OPTION 1: Add the function inside MapLoader (Recommended)
-// Update your MapLoader.kt:
-
 package com.storyspots.caption
 
 import android.util.Log
@@ -33,12 +30,10 @@ class MapLoader {
             getInstance().setupCameraListener()
         }
 
-        // Updated to use real-time listener instead of one-time fetch
         fun loadAllStories(onResult: (List<StoryData>) -> Unit) {
-            // Remove existing listener if any
-            storyListenerRegistration?.remove()
+            Log.d("MapLoader", "Attempting to load all stories...")
 
-            // Use real-time listener to automatically get new posts
+            storyListenerRegistration?.remove()
             storyListenerRegistration = fetchAllStories { stories ->
                 Log.d(TAG, "Stories updated: ${stories.size} total stories")
                 allStories.clear()
@@ -48,7 +43,6 @@ class MapLoader {
             }
         }
 
-        // Add method to manually refresh (call this after posting)
         fun refreshStories() {
             Log.d(TAG, "Manually refreshing stories...")
             updateVisiblePins()
@@ -140,7 +134,6 @@ class MapLoader {
             }
         }
 
-        // Cleanup method
         fun cleanup() {
             storyListenerRegistration?.remove()
             storyListenerRegistration = null

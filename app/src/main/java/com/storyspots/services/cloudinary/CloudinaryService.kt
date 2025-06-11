@@ -26,13 +26,24 @@ class CloudinaryService(private val context: Context) {
     }
 
     private fun initializeCloudinary() {
-        val config = HashMap<String, String>()
+        if (!isMediaManagerInitialized()) {
+            val config = HashMap<String, String>()
 
-        config["cloud_name"] = "dviaaly3l"
-        config["api_key"] = "478996327969175"
-        config["api_secret"] = "3zb2ocMQWoRzLX2-QykpkZ-x06M"
+            config["cloud_name"] = "dviaaly3l"
+            config["api_key"] = "478996327969175"
+            config["api_secret"] = "3zb2ocMQWoRzLX2-QykpkZ-x06M"
 
-        MediaManager.init(context, config)
+            MediaManager.init(context, config)
+        }
+    }
+
+    private fun isMediaManagerInitialized(): Boolean {
+        return try {
+            MediaManager.get()
+            true
+        } catch (e: IllegalStateException) {
+            false
+        }
     }
 
     fun uploadImageToCloudinary(uri: Uri?) {

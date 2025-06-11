@@ -277,13 +277,13 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             )
 
             if(mapReady && ::locationManager.isInitialized) {
-                RecenterButton(
-                    mapView = mapView,
-                    locationManager = locationManager,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 30.dp)
-                )
+//                RecenterButton(
+//                    mapView = mapView,
+//                    locationManager = locationManager,
+//                    modifier = Modifier
+//                        .align(Alignment.BottomEnd)
+//                        .padding(end = 16.dp, bottom = 30.dp)
+//                )
             }
 
             if (showStoryStack && selectedStories.isNotEmpty()) {

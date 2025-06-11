@@ -74,7 +74,7 @@ class StorySpotsMainActivity : ComponentActivity(), PermissionsListener {
     override fun onDestroy() {
         super.onDestroy()
         if (isFinishing) {
-            // Only cleanup if app is actually finishing
+            AppComponents.mapManager.cleanup()
             AppComponents.cleanup()
         }
     }
