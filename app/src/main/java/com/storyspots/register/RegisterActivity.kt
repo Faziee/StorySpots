@@ -1,0 +1,31 @@
+// RegisterActivity.kt
+package com.storyspots.register
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.storyspots.MainActivity
+import com.storyspots.login.LoginActivity
+
+class RegisterActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            val viewModel: RegisterViewModel = viewModel()
+
+            RegisterScreen(
+                viewModel = viewModel,
+                onRegisterSuccess = {
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                },
+                onNavigateToLogin = {
+                    startActivity(Intent(this, LoginActivity::class.java))
+                }
+            )
+        }
+    }
+}

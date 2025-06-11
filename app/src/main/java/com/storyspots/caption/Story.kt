@@ -1,3 +1,5 @@
+package com.storyspots.caption
+
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
@@ -7,19 +9,22 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 
-data class StoryData(
-    val id: String,
-    val title: String,
-    val createdAt: Timestamp?,
-    val location: GeoPoint?,
-    val caption: String?,
-    val imageUrl: String?,
-    val mapRef: DocumentReference?,
-    val authorRef: DocumentReference?
-)
-
 fun DocumentSnapshot.toStoryData(): StoryData? {
     return try {
+        val userField = get("user")
+        val authorRef: DocumentReference? = when (userField) {
+            is DocumentReference -> userField
+            is String -> {
+                if (userField.startsWith("/user/")) {
+                    val userId = userField.removePrefix("/user/")
+                    FirebaseFirestore.getInstance().collection("users").document(userId)
+                } else {
+                    null
+                }
+            }
+            else -> null
+        }
+
         StoryData(
             id = id,
             title = getString("title") ?: "Untitled",
@@ -28,10 +33,12 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
             caption = getString("caption"),
             imageUrl = getString("image_url"),
             mapRef = getDocumentReference("map"),
-            authorRef = getDocumentReference("user")
+            authorRef = authorRef,
+            userPath = userField as? String // Store the original string path too
         )
     } catch (e: Exception) {
-        Log.e("StoryBox", "Error converting document to StoryData", e)
+        Log.e("StoryBox", "Error converting document to StoryData: ${e.message}")
+        Log.e("StoryBox", "Document data: ${data}")
         null
     }
 }

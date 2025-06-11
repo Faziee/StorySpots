@@ -5,7 +5,7 @@ import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.White
 import com.storyspots.ui.theme.Black
 import com.storyspots.ui.theme.MediumText
-import StoryData
+import com.storyspots.caption.StoryData
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,8 +18,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,7 +31,60 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentReference
 import com.storyspots.R
+import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
+
+// User data class
+data class UserData(
+    val id: String = "",
+    val username: String = "Unknown User",
+    val profileImageUrl: String = ""
+)
+
+// Function to fetch user data by DocumentReference
+suspend fun fetchUserData(userRef: DocumentReference): UserData? {
+    return try {
+        val userDoc = FirebaseFirestore.getInstance()
+            .collection("user")
+            .document(userRef.id)
+            .get()
+            .await()
+
+        UserData(
+            id = userDoc.id,
+            username = userDoc.getString("username") ?: "Unknown User",
+            profileImageUrl = userDoc.getString("profile_picture_url")
+                ?: userDoc.getString("profileImageUrl")
+                ?: userDoc.getString("profile_picture")
+                ?: ""
+        )
+    } catch (e: Exception) {
+        android.util.Log.e("UserData", "Error fetching user data", e)
+        null
+    }
+}
+
+// Function to format relative time (like "3 hours ago")
+fun formatRelativeTime(timestamp: com.google.firebase.Timestamp): String {
+    val now = System.currentTimeMillis()
+    val time = timestamp.toDate().time
+    val diff = now - time
+
+    return when {
+        diff < 60_000 -> "Just now"
+        diff < 3600_000 -> "${diff / 60_000}m ago"
+        diff < 86400_000 -> "${diff / 3600_000}h ago"
+        diff < 604800_000 -> "${diff / 86400_000}d ago"
+        else -> {
+            val sdf = SimpleDateFormat("MMM dd", Locale.getDefault())
+            sdf.format(timestamp.toDate())
+        }
+    }
+}
 
 @Composable
 fun FullscreenStoryOverlay(
@@ -100,6 +153,17 @@ fun FullscreenStoryCard(
     story: StoryData,
     onLongPress: () -> Unit = {}
 ) {
+    var userData by remember { mutableStateOf<UserData?>(null) }
+    var isLoadingUser by remember { mutableStateOf(true) }
+
+    // Fetch user data when the card is composed
+    LaunchedEffect(story.authorRef) {
+        if (story.authorRef != null) {
+            userData = fetchUserData(story.authorRef)
+        }
+        isLoadingUser = false
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,25 +179,66 @@ fun FullscreenStoryCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(LightText)
-                )
+                // Profile picture
+                if (isLoadingUser) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(LightText),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = DarkText
+                        )
+                    }
+                } else {
+                    if (userData?.profileImageUrl?.isNotEmpty() == true) {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = userData?.profileImageUrl,
+                                placeholder = painterResource(R.drawable.placeholder_image),
+                                error = painterResource(R.drawable.placeholder_image)
+                            ),
+                            contentDescription = "Profile picture",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                        )
+                    } else {
+                        // Default profile picture with first letter of username
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(LightText),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = userData?.username?.firstOrNull()?.toString()?.uppercase() ?: "U",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = White
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "User Name",
+                        text = userData?.username ?: "Loading...",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = DarkText
                     )
-                    story.createdAt?.let {
+                    story.createdAt?.let { timestamp ->
                         Text(
-                            text = "3 hours ago",
+                            text = formatRelativeTime(timestamp),
                             fontSize = 12.sp,
                             color = LightText
                         )

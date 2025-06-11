@@ -1,6 +1,6 @@
 package com.storyspots.caption
 
-import StoryData
+import com.storyspots.caption.StoryData
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import com.storyspots.R
-import fetchAllStories
+import com.storyspots.caption.fetchAllStories
 import androidx.compose.foundation.background
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
@@ -168,15 +168,18 @@ fun formatFriendlyDate(date: Date): String {
 @SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun StoryStack(
+    stories: List<StoryData>, // Filtered stories passed from MapLoader
     screenOffset: Offset,
-    onPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit = {}
+    onDismiss: () -> Unit = {}
 ) {
-    var stories by remember { mutableStateOf<List<StoryData>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var showFullscreenOverlay by remember { mutableStateOf(false) }
     var currentIndex by remember { mutableStateOf(0) }
+    var showFullscreenOverlay by remember { mutableStateOf(false) }
 
-    // Offset to position bottom-left of box to the pin center
+    // Reset index when stories change
+    LaunchedEffect(stories) {
+        currentIndex = 0
+    }
+
     val storyBoxWidth = 180.dp
     val storyBoxHeight = 200.dp
 
@@ -189,29 +192,10 @@ fun StoryStack(
         )
     }
 
-    DisposableEffect(Unit) {
-        val registration = fetchAllStories { result ->
-            stories = result
-            isLoading = false
-        }
-
-        onDispose {
-            registration.remove()
-        }
-    }
-
-    if (isLoading) {
-        Text("Loading stories...")
-        return
-    }
-
     if (showFullscreenOverlay && stories.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {})
-                }
                 .zIndex(2f)
         ) {
             FullscreenStoryOverlay(
@@ -219,22 +203,18 @@ fun StoryStack(
                 onClose = { showFullscreenOverlay = false }
             )
         }
-
         return
     }
 
     if (stories.isNotEmpty()) {
-//        val story = stories[currentIndex]
         val visibleStories = stories.drop(currentIndex).take(3)
         val remainingStoriesCount = stories.size - currentIndex
 
         Box(
             modifier = Modifier
-                .onGloballyPositioned { coords -> onPositioned(coords) }
                 .offset { IntOffset(offsetPx.x.toInt(), offsetPx.y.toInt()) }
                 .size(storyBoxWidth, storyBoxHeight)
                 .zIndex(1f)
-                .pointerInput(Unit) {}
         ) {
             visibleStories.forEachIndexed { index, stackedStory ->
                 val stackIndex = visibleStories.size - 1 - index
@@ -256,7 +236,5 @@ fun StoryStack(
                 )
             }
         }
-    } else {
-        Text("No stories found.")
     }
 }

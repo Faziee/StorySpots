@@ -64,9 +64,9 @@ dependencies {
     implementation (libs.material)
     implementation (libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.play.services.maps)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -76,6 +76,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation (libs.androidx.material.icons.extended)
     ksp(libs.hilt.android.compiler)
 
     //-----SERVICES: FIREBASE-------
@@ -104,5 +106,5 @@ dependencies {
     implementation(libs.firebase.auth)
 
     //-----SERVICES: LOTTIE------
-    implementation(libs.dotlottie.android)
+    implementation(libs.lottie.compose)
 }
