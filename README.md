@@ -1,5 +1,6 @@
 
 # StorySpots 📍✨
+![StorySpots Logo](images/logo.png)
 
 > Share your stories with the world through location-based storytelling
 
@@ -17,31 +18,31 @@ StorySpots is a location-based social media Android application that allows user
 
 
 
-## 🌟 Features
+## Features
 
 ### Core Functionality
-- **📍 Location-Based Stories**: Share stories pinned to specific geographic coordinates
-- **🗺️ Interactive Map**: Explore stories on a beautiful custom Mapbox-powered map
-- **📸 Photo Sharing**: Upload and share images with your stories via Cloudinary
-- **🔍 Story Discovery**: Discover stories from other users in various locations
-- **📱 Modern UI**: Clean, intuitive interface built with Jetpack Compose
+- **Location-Based Stories**: Share stories pinned to specific geographic coordinates
+- **Interactive Map**: Explore stories on a beautiful custom Mapbox-powered map
+- **Photo Sharing**: Upload and share images with your stories via Cloudinary
+- **Story Discovery**: Discover stories from other users in various locations
+- **Modern UI**: Clean, intuitive interface built with Jetpack Compose
 
 ### User Features
-- **👤 User Authentication**: Secure login and registration with Firebase Auth
-- **🔒 Profile Management**: Customizable user profiles with profile pictures
-- **📰 Personal Feed**: View and manage your own posted stories
-- **🔔 Push Notifications**: Stay updated with interactions on your stories
-- **⚙️ Settings**: Comprehensive settings for account management
+- **User Authentication**: Secure login and registration with Firebase Auth
+- **Profile Management**: Customizable user profiles with profile pictures
+- **Personal Feed**: View and manage your own posted stories
+- **Push Notifications**: Stay updated with interactions on your stories
+- **Settings**: Comprehensive settings for account management
 
 ### Map Features
-- **📌 Pin Clustering**: Intelligent clustering of nearby story pins for better map readability
-- **🎯 Location Tracking**: Real-time location tracking with permission management
-- **🔄 Recenter Button**: Quickly return to your current location
-- **💫 Smooth Animations**: Fluid map interactions and transitions
+- **Pin Clustering**: Intelligent clustering of nearby story pins for better map readability
+- **Location Tracking**: Real-time location tracking with permission management
+- **Recenter Button**: Quickly return to your current location
+- **Smooth Animations**: Fluid map interactions and transitions
 
 
 
-## 🏗️ Architecture
+## Architecture
 
 ### Tech Stack
 - **Language**: Kotlin
@@ -86,7 +87,7 @@ com.storyspots/
 
 
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Android Studio Arctic Fox or later
@@ -182,7 +183,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 📱 App Flow
+## App Flow
 
 ### User Journey
 1. **Onboarding**: Login/Register with email and password
@@ -200,7 +201,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 🔧 Key Features Implementation
+## Key Features Implementation
 
 ### Location Services
 - **GPS Tracking**: Continuous location updates with battery optimization
@@ -222,7 +223,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 🎨 UI/UX Features
+## UI/UX Features
 
 ### Design System
 - **Material Design 3**: Modern Material You design principles
@@ -238,7 +239,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 🔔 Notifications
+## Notifications
 
 ### Push Notifications
 - **Story Interactions**: Notifications when users engage with your stories
@@ -248,7 +249,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 🛠️ Development
+##  Development
 
 ### Code Quality
 - **MVVM Architecture**: Clear separation of concerns
@@ -270,7 +271,7 @@ You'll need to set up accounts and obtain API keys for:
 
 
 
-## 📖 API Documentation
+## API Documentation
 
 ### Core Services
 
@@ -301,33 +302,7 @@ data class StoryData(
 
 
 
-## 🚧 Known Issues & Limitations
-
-- **Offline Mode**: Limited functionality without internet connection
-- **Image Size**: Large images may impact app performance
-- **Location Accuracy**: GPS accuracy depends on device and environment
-
-
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- **Story Categories**: Categorize stories by type (food, travel, etc.)
-- **Social Features**: Follow users, like/comment on stories
-- **AR Integration**: Augmented reality story viewing
-- **Story Collections**: Curated story collections and themes
-- **Advanced Search**: Filter stories by date, location, category
-- **Offline Mode**: Enhanced offline story viewing and creation
-
-### Technical Improvements
-- **Modular Architecture**: Break into feature modules
-- **Compose Navigation**: Full Compose navigation integration
-- **Room Database**: Local caching with Room
-- **Dependency Injection**: Dagger/Hilt integration
-
-
-
-## 📞 Support
+## Support
 
 For support, questions or feedback email the developers at their emails bellow.
 
