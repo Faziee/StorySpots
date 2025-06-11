@@ -1,6 +1,6 @@
 
 # StorySpots 📍✨
-![StorySpots Logo](images/logo.png)
+![StorySpots Logo](app/src/main/res/drawable/logo_ss.png)
 
 > Share your stories with the world through location-based storytelling
 
