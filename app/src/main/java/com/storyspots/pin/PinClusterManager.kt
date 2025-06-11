@@ -150,10 +150,35 @@ class SimpleClustering {
 
                 val clusterLayer = CircleLayer("cluster-circles", SOURCE_ID)
                 clusterLayer.filter(Expression.has(Expression.literal("point_count")))
-                clusterLayer.circleColor(Expression.literal("#FF0000"))
-                clusterLayer.circleRadius(Expression.literal(25.0))
+
+                clusterLayer.circleColor(
+                    Expression.step(
+                        Expression.get(Expression.literal("point_count")),
+                        Expression.literal("#FF69B4"),
+                        Expression.literal(5), Expression.literal("#FF1493"),
+                        Expression.literal(10), Expression.literal("#FF9CC7"),
+                        Expression.literal(20), Expression.literal("#FF2D87"),
+                        Expression.literal(50), Expression.literal("#D91A6B"),
+                        Expression.literal(100), Expression.literal("#B8155A")
+                    )
+                )
+                clusterLayer.circleRadius(
+                    Expression.step(
+                        Expression.get(Expression.literal("point_count")),
+                        Expression.literal(20.0), // Small radius for few pins
+                        Expression.literal(10), Expression.literal(25.0),
+                        Expression.literal(20), Expression.literal(30.0),
+                        Expression.literal(50), Expression.literal(35.0),
+                        Expression.literal(100), Expression.literal(40.0)
+                    )
+                )
+
                 clusterLayer.circleStrokeWidth(Expression.literal(2.0))
                 clusterLayer.circleStrokeColor(Expression.literal("#FFFFFF"))
+
+                clusterLayer.circleStrokeWidth(Expression.literal(2.0))
+                clusterLayer.circleStrokeColor(Expression.literal("#FFFFFF"))
+
 
                 style.addLayer(clusterLayer)
                 Log.d(TAG, "Cluster layer added")
