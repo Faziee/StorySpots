@@ -204,7 +204,7 @@ private suspend fun initializeMapAsync(
                 Log.e("MapScreen", "pin_marker drawable not found")
             }
 
-            // Wait a moment for clustering to be fully set up
+            //delay to allow clustering to initialize
             kotlinx.coroutines.delay(300)
 
             Log.d("MapScreen", "Clustering initialized after setup: ${SimpleClustering.isClusteringInitialized()}")
@@ -212,7 +212,6 @@ private suspend fun initializeMapAsync(
             // Set up direct pin click handling through SimpleClustering
             SimpleClustering.setOnPinClickListener { clickedPoint ->
                 Log.d("MapScreen", "Pin clicked at: ${clickedPoint.latitude()}, ${clickedPoint.longitude()}")
-                // Find stories at the clicked location
                 val storiesAtLocation = AppComponents.mapStateManager.currentStories.value.filter { story ->
                     story.location?.let { geoPoint ->
                         val distance = calculateDistance(clickedPoint, geoPoint)

@@ -81,6 +81,7 @@ fun YourFeedScreen() {
                             if (success) {
                                 showDeleteDialog = false
                                 storyToDelete = null
+                                refreshMapPins()
                             } else {
                                 Log.e("YourFeedScreen", "Failed to delete story: $error")
                             }
@@ -415,14 +416,14 @@ fun fetchUserStories(onResult: (List<StoryData>, String?) -> Unit): ListenerRegi
         .addOnSuccessListener { allStories ->
             Log.d(TAG, "=== ALL STORIES DEBUG ===")
             Log.d(TAG, "Total stories in database: ${allStories.size()}")
-//            allStories.documents.forEach { doc ->
-//                Log.d(TAG, "Story ID: ${doc.id}")
-//                Log.d(TAG, "  User field: '${doc.get("user")}'")
-//                Log.d(TAG, "  Title: '${doc.get("title")}'")
-//                Log.d(TAG, "  Image URL: '${doc.get("imageUrl")}'")
-//                Log.d(TAG, "  Created: ${doc.get("created_at")}")
-//                Log.d(TAG, "  Matches current user: ${doc.get("user") == userPath}")
-//            }
+            allStories.documents.forEach { doc ->
+                Log.d(TAG, "Story ID: ${doc.id}")
+                Log.d(TAG, "  User field: '${doc.get("user")}'")
+                Log.d(TAG, "  Title: '${doc.get("title")}'")
+                Log.d(TAG, "  Image URL: '${doc.get("imageUrl")}'")
+                Log.d(TAG, "  Created: ${doc.get("created_at")}")
+                Log.d(TAG, "  Matches current user: ${doc.get("user") == userPath}")
+            }
             Log.d(TAG, "=== END ALL STORIES DEBUG ===")
         }
 
@@ -535,4 +536,13 @@ fun tryDirectUserIdQuery(userId: String, onResult: (List<StoryData>, String?) ->
             Log.e(TAG, "Error with direct query", e)
             onResult(emptyList(), "Error: ${e.message}")
         }
+}
+
+fun refreshMapPins() {
+    try {
+        com.storyspots.core.AppComponents.refreshStories()
+        Log.d("YourFeedScreen", "Map pins refreshed after story deletion")
+    } catch (e: Exception) {
+        Log.e("YourFeedScreen", "Failed to refresh map pins", e)
+    }
 }

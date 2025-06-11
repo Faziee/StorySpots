@@ -7,12 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyspots.MainActivity
-import com.storyspots.core.composables.StorySpotsMainActivity
-import com.storyspots.register.RegisterActivity
 
 class LoginActivity : ComponentActivity() {
 //    private val intentClass = MainActivity::class.java
-    private val intentClass = StorySpotsMainActivity::class.java
+    private val intentClass = MainActivity::class.java
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -16,7 +16,6 @@ import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
-import com.storyspots.Initialise
 
 public class LocationComponentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
