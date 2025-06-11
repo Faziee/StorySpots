@@ -360,7 +360,6 @@ class MainActivity : ComponentActivity(), PermissionsListener {
             }
             NavItem.CreatePost -> {
                 currentScreen = "create"
-                Toast.makeText(this, "Create Post selected", Toast.LENGTH_SHORT).show()
             }
             else -> {}
         }
