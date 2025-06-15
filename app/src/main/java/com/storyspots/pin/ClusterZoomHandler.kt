@@ -1,6 +1,7 @@
 package com.storyspots.pin
 
 import android.util.Log
+import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.plugin.animation.MapAnimationOptions
@@ -8,13 +9,25 @@ import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
+import com.google.gson.JsonObject
+import com.google.gson.JsonElement
+
+// Extension function to get properties from QueriedRenderedFeature
+fun com.mapbox.maps.QueriedRenderedFeature.getProperty(propertyName: String): JsonElement? {
+    return this.queriedFeature.feature?.properties()?.get(propertyName)
+}
 
 class ClusterZoomHandler {
 
     companion object {
         private const val TAG = "ClusterZoomHandler"
+        private const val SMALL_CLUSTER_THRESHOLD = 5
 
-        fun setupClusterClickHandler(mapView: MapView, sourceId: String) {
+        fun setupClusterClickHandler(
+            mapView: MapView,
+            sourceId: String,
+            onSmallClusterClick: ((Point, Int) -> Unit)? = null
+        ) {
             Log.d(TAG, "Setting up cluster-specific click handler")
 
             mapView.mapboxMap.addOnMapClickListener { point ->
@@ -29,19 +42,28 @@ class ClusterZoomHandler {
                     val features = result.value
 
                     if (!features.isNullOrEmpty()) {
-                        Log.d(TAG, "Clicked on cluster! Zooming in...")
+                        val feature = features.first()
+                        val pointCount = feature.getProperty("point_count")?.asInt ?: 0
 
-                        val currentZoom = mapView.mapboxMap.cameraState.zoom
+                        Log.d(TAG, "Clicked on cluster with $pointCount stories")
 
-                        mapView.camera.easeTo(
-                            CameraOptions.Builder()
-                                .center(point)
-                                .zoom(currentZoom + 3.0)
-                                .build(),
-                            MapAnimationOptions.mapAnimationOptions {
-                                duration(500)
-                            }
-                        )
+                        if (pointCount <= SMALL_CLUSTER_THRESHOLD) {
+                            Log.d(TAG, "Small cluster ($pointCount stories) - showing story stack")
+                            onSmallClusterClick?.invoke(point, pointCount)
+                        } else {
+                            Log.d(TAG, "Large cluster ($pointCount stories) - zooming in")
+                            val currentZoom = mapView.mapboxMap.cameraState.zoom
+
+                            mapView.camera.easeTo(
+                                CameraOptions.Builder()
+                                    .center(point)
+                                    .zoom(currentZoom + 3.0)
+                                    .build(),
+                                MapAnimationOptions.mapAnimationOptions {
+                                    duration(500)
+                                }
+                            )
+                        }
                     } else {
                         Log.d(TAG, "Not a cluster click - ignoring")
                     }
