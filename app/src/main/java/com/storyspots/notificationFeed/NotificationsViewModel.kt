@@ -44,7 +44,11 @@ class NotificationsViewModel : ViewModel() {
                 val db = FirebaseFirestore.getInstance()
                 val notificationsRef = db.collection("notification")
 
+                val currentUserId = FirebaseAuth.getInstance().uid ?: ""
+
                 val querySnapshot = notificationsRef
+                    .whereNotEqualTo("authorId", currentUserId)
+                    .orderBy("authorId")
                     .orderBy("created_at", Query.Direction.DESCENDING)
                     .get()
                     .await()
@@ -54,6 +58,8 @@ class NotificationsViewModel : ViewModel() {
                 val notifications = mutableListOf<NotificationItem>()
 
                 for (doc in querySnapshot.documents) {
+                    println("Notification doc id=${doc.id} data=${doc.data}")
+
                     try {
                         println("Processing document: ${doc.id}")
                         println("Document data: ${doc.data}")
