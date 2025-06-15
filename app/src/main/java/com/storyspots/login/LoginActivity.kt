@@ -21,12 +21,12 @@ class LoginActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsState()
 
             // Comment out for always log in testing
-//            LaunchedEffect(uiState.isLoggedIn) {
-//                if (uiState.isLoggedIn) {
-//                    startActivity(Intent(this@LoginActivity, intentClass))
-//                    finish()
-//                }
-//            }
+            LaunchedEffect(uiState.isLoggedIn) {
+                if (uiState.isLoggedIn) {
+                    startActivity(Intent(this@LoginActivity, intentClass))
+                    finish()
+                }
+            }
 
             LoginScreen(
                 viewModel = viewModel,

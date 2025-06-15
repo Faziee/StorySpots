@@ -36,6 +36,9 @@ import com.storyspots.ui.theme.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
 import com.storyspots.login.LoginActivity
+import java.util.UUID
+import androidx.compose.runtime.rememberCoroutineScope
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,17 +48,21 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    val userData by settingsViewModel.userData.collectAsState()
     val isUploading by settingsViewModel.isUploadingImage.collectAsState()
-    val uploadedUrl by settingsViewModel.uploadedImageUrl.collectAsState()
+
+
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    settingsViewModel.initializeCloudinaryService(context)
-
-    // User data state
-    var userData by remember { mutableStateOf(UserData()) }
-
+    // Load user data on composition
+    LaunchedEffect(Unit) {
+        isLoading = true
+        settingsViewModel.loadUserData()
+        settingsViewModel.initializeCloudinaryService(context)
+        isLoading = false
+    }
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -63,24 +70,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
     ) { uri: Uri? ->
         uri?.let {
             scope.launch {
-                isLoading = true
-                val newImageUrl = settingsViewModel.updateProfileImage(it, userData.userId, context)
-                newImageUrl.let { url ->
-                    userData = userData.copy(profileImageUrl = url.toString())
-                }
-                isLoading = false
+                settingsViewModel.uploadProfileImage(it, userData.userId, context)
             }
         }
-    }
-
-
-    //Change pictyre says done but UI doesnt display new picture
-
-    // Load user data on composition
-    LaunchedEffect(Unit) {
-        isLoading = true
-        userData = settingsViewModel.loadUserData()
-        isLoading = false
     }
 
     LazyColumn(
@@ -110,30 +102,41 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                             .size(80.dp)
                             .clip(CircleShape)
                             .background(Pink80)
-                            .border(3.dp, Pink80, CircleShape)
-                            .clickable { imagePickerLauncher.launch("image/*") },
+                            .border(3.dp, Pink80, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (userData.profileImageUrl.isNotEmpty()) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(userData.profileImageUrl)
-                                    .build(),
-                                contentDescription = "Profile Picture",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Default Profile",
-                                modifier = Modifier.size(40.dp),
-                                tint = Pink40
-                            )
+                        when {
+                            isUploading -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(30.dp),
+                                    color = Pink40
+                                )
+                            }
+
+                            userData.profileImageUrl.isNotEmpty() -> {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(userData.profileImageUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+
+                            else ->
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = "Default Profile",
+                                    modifier = Modifier.size(40.dp),
+                                    tint = Pink40
+                                )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = userData.username,
@@ -286,7 +289,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         }
     }
 
-    if (isLoading) {
+    if (isLoading && !isUploading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -306,9 +309,6 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                 scope.launch {
                     isLoading = true
                     val result = settingsViewModel.changeUsername(userData.userId, newUsername, context)
-                    if (result is SettingsResult.Success) {
-                        userData = userData.copy(username = newUsername)
-                    }
                     isLoading = false
                     showChangeUsernameDialog = false
                 }
@@ -324,9 +324,6 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                 scope.launch {
                     isLoading = true
                     val result = settingsViewModel.changeEmail(newEmail, password, context)
-                    if (result is SettingsResult.Success) {
-                        userData = userData.copy(email = newEmail)
-                    }
                     isLoading = false
                     showChangeEmailDialog = false
                 }
