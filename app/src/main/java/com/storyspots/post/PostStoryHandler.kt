@@ -2,10 +2,12 @@ package com.storyspots.post
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import com.storyspots.core.AppComponents
+import com.storyspots.notification.NotificationSender
 import com.storyspots.services.cloudinary.CloudinaryService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -128,6 +130,18 @@ class PostStoryHandler(private val context: Context) {
             .set(postDocument)
             .addOnSuccessListener {
                 _postState.value = PostState.Success
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        NotificationSender().sendNewPostNotification(
+                            postTitle = postData.title,
+                            postId = documentId,
+                            authorName = currentUser.displayName ?: "A user"
+                        )
+                    } catch (e: Exception) {
+                        Log.e("PostStoryHandler", "Failed to send notification", e)
+                    }
+                }
             }
             .addOnFailureListener { exception ->
                 _postState.value = PostState.Error("Failed to save post: ${exception.message}")
