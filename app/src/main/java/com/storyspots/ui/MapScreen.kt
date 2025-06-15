@@ -185,7 +185,7 @@ private suspend fun initializeMapAsync(
 
             Log.d("MapScreen", "About to initialize clustering")
 
-            // Initialize clustering directly here (don't call MapStateManager method to avoid duplication)
+            // Initialize clustering directly here
             val context = mapView.context
             val resourceId = context.resources.getIdentifier("pin_marker", "drawable", context.packageName)
             if (resourceId != 0) {
@@ -195,7 +195,33 @@ private suspend fun initializeMapAsync(
                     val pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
                     SimpleClustering.setupClustering(mapView, pointAnnotationManager, bitmap)
-                    ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins")
+
+                    // Set up small cluster click listener
+                    SimpleClustering.setOnSmallClusterClickListener { stories, offset ->
+                        Log.d("MapScreen", "Small cluster clicked with ${stories.size} stories")
+                        onPinClick(stories, offset)
+                    }
+
+                    // Set up cluster zoom handler with small cluster callback
+                    ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins") { point, pointCount ->
+                        Log.d("MapScreen", "Small cluster clicked at $point with $pointCount stories")
+
+                        // Get stories near this cluster point
+                        val storiesAtLocation = AppComponents.mapStateManager.currentStories.value.filter { story ->
+                            story.location?.let { geoPoint ->
+                                val distance = calculateDistance(point, geoPoint)
+                                distance < 0.001 // Slightly larger radius for clusters
+                            } ?: false
+                        }
+
+                        Log.d("MapScreen", "Cluster clicked: found ${storiesAtLocation.size} stories at location")
+
+                        if (storiesAtLocation.isNotEmpty()) {
+                            val offset = convertPointToOffsetWithPadding(point, mapView, 80f)
+                            onPinClick(storiesAtLocation, offset)
+                        }
+                    }
+
                     Log.d("MapScreen", "Clustering setup completed")
                 } else {
                     Log.e("MapScreen", "Failed to decode pin_marker bitmap")
@@ -204,14 +230,14 @@ private suspend fun initializeMapAsync(
                 Log.e("MapScreen", "pin_marker drawable not found")
             }
 
-            //delay to allow clustering to initialize
+            // Delay to allow clustering to initialize
             kotlinx.coroutines.delay(300)
 
             Log.d("MapScreen", "Clustering initialized after setup: ${SimpleClustering.isClusteringInitialized()}")
 
             // Set up direct pin click handling through SimpleClustering
             SimpleClustering.setOnPinClickListener { clickedPoint ->
-                Log.d("MapScreen", "Pin clicked at: ${clickedPoint.latitude()}, ${clickedPoint.longitude()}")
+                Log.d("MapScreen", "Individual pin clicked at: ${clickedPoint.latitude()}, ${clickedPoint.longitude()}")
                 val storiesAtLocation = AppComponents.mapStateManager.currentStories.value.filter { story ->
                     story.location?.let { geoPoint ->
                         val distance = calculateDistance(clickedPoint, geoPoint)
