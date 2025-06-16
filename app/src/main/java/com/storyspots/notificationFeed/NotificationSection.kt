@@ -10,14 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.storyspots.model.NotificationItem
+import com.storyspots.model.NotificationWithUser
 import com.storyspots.ui.theme.DarkText
 
 @Composable
 fun NotificationSection(
     title: String,
-    items: List<NotificationItem>,
-    onViewClick: (NotificationItem) -> Unit = {}
+    items: List<NotificationWithUser>,
+    onViewClick: (NotificationWithUser) -> Unit = {}
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Text(
@@ -37,9 +37,9 @@ fun NotificationSection(
                 modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 12.dp)
             )
         } else {
-            items.forEach { notificationItem ->
+            items.forEach { item ->
                 NotificationRow(
-                    item = notificationItem,
+                    item = item,
                     onViewClick = onViewClick
                 )
             }

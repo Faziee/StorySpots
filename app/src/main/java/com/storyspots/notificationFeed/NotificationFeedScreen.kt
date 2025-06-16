@@ -22,13 +22,14 @@ import com.storyspots.ui.theme.White
 import com.storyspots.notificationFeed.NotificationSection
 import com.storyspots.notificationFeed.NotificationsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.storyspots.model.NotificationWithUser
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun NotificationFeedScreen(
     onBackClick: () -> Unit = {},
-    onViewClick: (NotificationItem) -> Unit = {}
+    onViewClick: (NotificationWithUser) -> Unit = {}
 ) {
     val viewModel: NotificationsViewModel = viewModel()
     val newNotifications by viewModel.newNotifications.collectAsState()
@@ -40,10 +41,7 @@ fun NotificationFeedScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("") },
-
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = White
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = White)
             )
         },
         containerColor = Background
@@ -55,7 +53,6 @@ fun NotificationFeedScreen(
                 .background(Background),
             contentAlignment = Alignment.TopCenter
         ) {
-
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
@@ -82,31 +79,32 @@ fun NotificationFeedScreen(
                             NotificationSection(
                                 title = "New",
                                 items = newNotifications,
-                                onViewClick = {
-                                    viewModel.markAsViewed(it.id)
-                                    onViewClick(it)
-                                }
+                                onViewClick = onViewClick
                             )
 
                             if (newNotifications.isNotEmpty() &&
-                                (lastWeekNotifications.isNotEmpty() || lastMonthNotifications.isNotEmpty())) {
-                                Divider(color = Background, thickness = 1.dp,
-                                    modifier = Modifier.padding(vertical = 8.dp))
+                                (lastWeekNotifications.isNotEmpty() || lastMonthNotifications.isNotEmpty())
+                            ) {
+                                Divider(
+                                    color = Background,
+                                    thickness = 1.dp,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
                             }
 
                             if (lastWeekNotifications.isNotEmpty()) {
                                 NotificationSection(
                                     title = "Last 7 days",
                                     items = lastWeekNotifications,
-                                    onViewClick = {
-                                        viewModel.markAsViewed(it.id)
-                                        onViewClick(it)
-                                    }
+                                    onViewClick = onViewClick
                                 )
 
                                 if (lastMonthNotifications.isNotEmpty()) {
-                                    Divider(color = Background, thickness = 1.dp,
-                                        modifier = Modifier.padding(vertical = 8.dp))
+                                    Divider(
+                                        color = Background,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
                                 }
                             }
 
@@ -114,16 +112,14 @@ fun NotificationFeedScreen(
                                 NotificationSection(
                                     title = "Last 30 days",
                                     items = lastMonthNotifications,
-                                    onViewClick = {
-                                        viewModel.markAsViewed(it.id)
-                                        onViewClick(it)
-                                    }
+                                    onViewClick = onViewClick
                                 )
                             }
 
                             if (newNotifications.isEmpty() &&
                                 lastWeekNotifications.isEmpty() &&
-                                lastMonthNotifications.isEmpty()) {
+                                lastMonthNotifications.isEmpty()
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
