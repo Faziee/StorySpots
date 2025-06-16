@@ -116,8 +116,29 @@ object MapStateManager {
         SimpleClustering.setupClustering(mapView, pointAnnotationManager, bitmap)
         ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins")
 
+        ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins") { point, pointCount ->
+            Log.d(TAG, "Small cluster clicked at $point with $pointCount stories")
+
+            // Get stories near this cluster point using the same logic you already have
+            val storiesAtLocation = currentStories.value.filter { story ->
+                story.location?.let { geoPoint ->
+                    val distance = calculateDistance(point, geoPoint)
+                    distance < 0.001
+                } ?: false
+            }
+
+            Log.d(TAG, "Cluster clicked: found ${storiesAtLocation.size} stories at location")
+        }
+
+
         Log.d(TAG, "Map initialization completed for new instance")
     }
 
     fun getStoriesCount(): Int = _currentStories.value.size
+
+    private fun calculateDistance(point: com.mapbox.geojson.Point, geoPoint: com.google.firebase.firestore.GeoPoint): Double {
+        val latDiff = point.latitude() - geoPoint.latitude
+        val lngDiff = point.longitude() - geoPoint.longitude
+        return kotlin.math.sqrt(latDiff * latDiff + lngDiff * lngDiff)
+    }
 }

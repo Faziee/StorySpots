@@ -1,6 +1,11 @@
 package com.storyspots.settings
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,28 +25,55 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.storyspots.ui.theme.*
+import kotlinx.coroutines.launch
+import com.google.firebase.Timestamp
+import com.storyspots.login.LoginActivity
+import java.util.UUID
+import androidx.compose.runtime.rememberCoroutineScope
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() )  {
     var showChangeUsernameDialog by remember { mutableStateOf(false) }
     var showChangeEmailDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    val userData by settingsViewModel.userData.collectAsState()
+    val isUploading by settingsViewModel.isUploadingImage.collectAsState()
 
-    // Mock user data - replace with actual user data from your auth system
-    var username by remember { mutableStateOf("Pookies") }
-    var userEmail by remember { mutableStateOf("pookies@gmail.com") }
-    var profileImageUrl by remember { mutableStateOf("") }
+
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Load user data on composition
+    LaunchedEffect(Unit) {
+        isLoading = true
+        settingsViewModel.loadUserData()
+        settingsViewModel.initializeCloudinaryService(context)
+        isLoading = false
+    }
+
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            scope.launch {
+                settingsViewModel.uploadProfileImage(it, userData.userId, context)
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -70,40 +102,51 @@ fun SettingsScreen() {
                             .size(80.dp)
                             .clip(CircleShape)
                             .background(Pink80)
-                            .border(3.dp, Pink80, CircleShape)
-                            .clickable { /* Handle profile picture change */ },
+                            .border(3.dp, Pink80, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (profileImageUrl.isNotEmpty()) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(profileImageUrl)
-                                    .build(),
-                                contentDescription = "Profile Picture",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Default Profile",
-                                modifier = Modifier.size(40.dp),
-                                tint = Pink40
-                            )
+                        when {
+                            isUploading -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(30.dp),
+                                    color = Pink40
+                                )
+                            }
+
+                            userData.profileImageUrl.isNotEmpty() -> {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(userData.profileImageUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+
+                            else ->
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = "Default Profile",
+                                    modifier = Modifier.size(40.dp),
+                                    tint = Pink40
+                                )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = username,
+                        text = userData.username,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = DarkText
                     )
 
                     Text(
-                        text = userEmail,
+                        text = userData.email,
                         fontSize = 14.sp,
                         color = MediumText
                     )
@@ -125,7 +168,7 @@ fun SettingsScreen() {
                     SettingsItem(
                         icon = Icons.Default.Person,
                         title = "Change Username",
-                        subtitle = username,
+                        subtitle = userData.username,
                         onClick = { showChangeUsernameDialog = true }
                     )
 
@@ -134,7 +177,7 @@ fun SettingsScreen() {
                     SettingsItem(
                         icon = Icons.Default.Email,
                         title = "Change Email",
-                        subtitle = userEmail,
+                        subtitle = userData.email,
                         onClick = { showChangeEmailDialog = true }
                     )
 
@@ -153,10 +196,7 @@ fun SettingsScreen() {
                         icon = Icons.Default.AccountBox,
                         title = "Change Profile Picture",
                         subtitle = "Update your avatar",
-                        onClick = {
-                            // Handle profile picture change
-                            // You can implement image picker here
-                        }
+                        onClick = { imagePickerLauncher.launch("image/*") }
                     )
                 }
             }
@@ -178,8 +218,23 @@ fun SettingsScreen() {
                         title = "Logout",
                         subtitle = "Sign out of your account",
                         onClick = {
-                            // Handle logout
-                            FirebaseAuth.getInstance().signOut()
+                            scope.launch {
+                                try {
+                                    isLoading = true
+                                    settingsViewModel.logout(context)
+
+                                    val intent = Intent(context, LoginActivity::class.java).apply {
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    }
+                                    context.startActivity(intent)
+
+                                    (context as? Activity)?.finish()
+
+                                } catch (e: Exception) {
+                                    Log.e("LogOut", e.toString())
+                                    isLoading = false
+                                }
+                            }
                         },
                         textColor = Pink40
                     )
@@ -190,8 +245,10 @@ fun SettingsScreen() {
                         icon = Icons.Default.Delete,
                         title = "Delete Account",
                         subtitle = "Permanently delete your account",
-                        onClick = { showDeleteAccountDialog = true },
-                        textColor = DarkText
+                        textColor = DarkText,
+                        onClick = {
+                            showDeleteAccountDialog = true
+                        }
                     )
                 }
             }
@@ -232,27 +289,44 @@ fun SettingsScreen() {
         }
     }
 
+    if (isLoading && !isUploading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Pink)
+        }
+    }
+
     // Dialogs
     if (showChangeUsernameDialog) {
         ChangeUsernameDialog(
-            currentUsername = username,
+            currentUsername = userData.username,
             onDismiss = { showChangeUsernameDialog = false },
             onConfirm = { newUsername ->
-                username = newUsername
-                showChangeUsernameDialog = false
-                // Implement username change logic
+                scope.launch {
+                    isLoading = true
+                    val result = settingsViewModel.changeUsername(userData.userId, newUsername, context)
+                    isLoading = false
+                    showChangeUsernameDialog = false
+                }
             }
         )
     }
 
     if (showChangeEmailDialog) {
         ChangeEmailDialog(
-            currentEmail = userEmail,
+            currentEmail = userData.email,
             onDismiss = { showChangeEmailDialog = false },
-            onConfirm = { newEmail ->
-                userEmail = newEmail
-                showChangeEmailDialog = false
-                // Implement email change logic
+            onConfirm = { newEmail, password ->
+                scope.launch {
+                    isLoading = true
+                    val result = settingsViewModel.changeEmail(newEmail, password, context)
+                    isLoading = false
+                    showChangeEmailDialog = false
+                }
             }
         )
     }
@@ -261,8 +335,12 @@ fun SettingsScreen() {
         ChangePasswordDialog(
             onDismiss = { showChangePasswordDialog = false },
             onConfirm = { oldPassword, newPassword ->
-                showChangePasswordDialog = false
-                // Implement password change logic
+                scope.launch {
+                    isLoading = true
+                    settingsViewModel.changePassword(oldPassword, newPassword, context)
+                    isLoading = false
+                    showChangePasswordDialog = false
+                }
             }
         )
     }
@@ -270,9 +348,20 @@ fun SettingsScreen() {
     if (showDeleteAccountDialog) {
         DeleteAccountDialog(
             onDismiss = { showDeleteAccountDialog = false },
-            onConfirm = {
-                showDeleteAccountDialog = false
-                // Implement account deletion logic
+            onConfirm = { password ->
+                scope.launch {
+                    isLoading = true
+                    val result = settingsViewModel.deleteAccount(password, context)
+                    isLoading = false
+                    showDeleteAccountDialog = false
+
+                    val intent = Intent(context, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    context.startActivity(intent)
+
+                    (context as? Activity)?.finish()
+                }
             }
         )
     }
@@ -389,9 +478,10 @@ fun ChangeUsernameDialog(
 fun ChangeEmailDialog(
     currentEmail: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String, String) -> Unit
 ) {
     var newEmail by remember { mutableStateOf(currentEmail) }
+    var password by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -406,7 +496,7 @@ fun ChangeEmailDialog(
         text = {
             Column {
                 Text(
-                    "Enter your new email address:",
+                    "Enter your new email address and current password:",
                     color = MediumText
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -420,11 +510,24 @@ fun ChangeEmailDialog(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Current Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Pink,
+                        focusedLabelColor = Pink
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(newEmail) },
+                onClick = { onConfirm(newEmail, password) },
+                enabled = newEmail.isNotBlank() && password.isNotBlank() && newEmail != currentEmail,
                 colors = ButtonDefaults.textButtonColors(contentColor = Pink)
             ) {
                 Text("Change")
@@ -467,6 +570,7 @@ fun ChangePasswordDialog(
                     value = oldPassword,
                     onValueChange = { oldPassword = it },
                     label = { Text("Current Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Pink,
                         focusedLabelColor = Pink
@@ -478,6 +582,7 @@ fun ChangePasswordDialog(
                     value = newPassword,
                     onValueChange = { newPassword = it },
                     label = { Text("New Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Pink,
                         focusedLabelColor = Pink
@@ -489,6 +594,7 @@ fun ChangePasswordDialog(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text("Confirm New Password") },
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Pink,
                         focusedLabelColor = Pink
@@ -520,8 +626,10 @@ fun ChangePasswordDialog(
 @Composable
 fun DeleteAccountDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (String) -> Unit
 ) {
+    var password by remember { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = White,
@@ -533,14 +641,33 @@ fun DeleteAccountDialog(
             )
         },
         text = {
-            Text(
-                "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
-                color = DarkText
-            )
+            Column {
+                Text(
+                    "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.",
+                    color = DarkText
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Enter your password to confirm:",
+                    color = MediumText
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Pink,
+                        focusedLabelColor = Pink
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm,
+                onClick = { onConfirm(password) },
                 colors = ButtonDefaults.textButtonColors(contentColor = DarkText)
             ) {
                 Text("Delete")

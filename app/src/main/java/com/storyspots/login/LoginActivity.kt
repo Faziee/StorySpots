@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.storyspots.MainActivity
+import com.storyspots.register.RegisterActivity
 
 class LoginActivity : ComponentActivity() {
 //    private val intentClass = MainActivity::class.java
@@ -34,7 +35,7 @@ class LoginActivity : ComponentActivity() {
                     finish()
                 },
                 onNavigateToRegister = {
-                    startActivity(Intent(this, intentClass))
+                    startActivity(Intent(this, RegisterActivity::class.java))
                 }
             )
         }

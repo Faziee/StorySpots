@@ -2,6 +2,7 @@ package com.storyspots.pin
 
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.geometry.Offset
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
@@ -14,10 +15,10 @@ import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.getSource
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotation
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
+import com.storyspots.caption.StoryData
 
 class SimpleClustering {
 
@@ -28,6 +29,7 @@ class SimpleClustering {
         private const val SOURCE_ID = "clustering-pins"
         private var isInitialized = false
         private var onPinClickListener: ((Point) -> Unit)? = null
+        private var onSmallClusterClickListener: ((List<StoryData>, Offset) -> Unit)? = null
 
         fun setupClustering(mapView: MapView, pointAnnotationManager: PointAnnotationManager, pinBitmap: Bitmap) {
             Log.d(TAG, "Setting up clustering...")
@@ -64,6 +66,10 @@ class SimpleClustering {
 
         fun setOnPinClickListener(listener: (Point) -> Unit) {
             onPinClickListener = listener
+        }
+
+        fun setOnSmallClusterClickListener(listener: (List<StoryData>, Offset) -> Unit) {
+            onSmallClusterClickListener = listener
         }
 
         fun clearPins() {
@@ -138,7 +144,7 @@ class SimpleClustering {
                 style.addSource(source)
                 Log.d(TAG, "Source added successfully")
 
-                // Remove existing layers if they exist (shouldn't be needed after source removal, but just in case)
+                // Remove existing layers if they exist
                 listOf("cluster-circles", "cluster-text", "unclustered-pins").forEach { layerId ->
                     try {
                         style.removeStyleLayer(layerId)
@@ -150,8 +156,29 @@ class SimpleClustering {
 
                 val clusterLayer = CircleLayer("cluster-circles", SOURCE_ID)
                 clusterLayer.filter(Expression.has(Expression.literal("point_count")))
-                clusterLayer.circleColor(Expression.literal("#FF0000"))
-                clusterLayer.circleRadius(Expression.literal(25.0))
+
+                clusterLayer.circleColor(
+                    Expression.step(
+                        Expression.get(Expression.literal("point_count")),
+                        Expression.literal("#FF69B4"),
+                        Expression.literal(5), Expression.literal("#FF1493"),
+                        Expression.literal(10), Expression.literal("#FF9CC7"),
+                        Expression.literal(20), Expression.literal("#FF2D87"),
+                        Expression.literal(50), Expression.literal("#D91A6B"),
+                        Expression.literal(100), Expression.literal("#B8155A")
+                    )
+                )
+                clusterLayer.circleRadius(
+                    Expression.step(
+                        Expression.get(Expression.literal("point_count")),
+                        Expression.literal(20.0),
+                        Expression.literal(10), Expression.literal(25.0),
+                        Expression.literal(20), Expression.literal(30.0),
+                        Expression.literal(50), Expression.literal(35.0),
+                        Expression.literal(100), Expression.literal(40.0)
+                    )
+                )
+
                 clusterLayer.circleStrokeWidth(Expression.literal(2.0))
                 clusterLayer.circleStrokeColor(Expression.literal("#FFFFFF"))
 
@@ -186,7 +213,6 @@ class SimpleClustering {
                 style.addImage("pin-marker", pinBitmap)
                 Log.d(TAG, "Pin bitmap added to style")
 
-                ClusterZoomHandler.setupClusterClickHandler(mapView, SOURCE_ID)
                 setupPinClickListener(mapView)
 
                 isInitialized = true
