@@ -44,7 +44,7 @@ fun NotificationRow(
                 .size(48.dp)
                 .clip(CircleShape)
                 .background(Color.LightGray),
-        contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
             if (!item.imageUrl.isNullOrBlank()) {
@@ -62,8 +62,9 @@ fun NotificationRow(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
+                    val initial = item.fromUserId.firstOrNull()?.toString() ?: "?"
                     Text(
-                        text = item.fromUserId.first().toString(),
+                        text = initial,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -74,7 +75,7 @@ fun NotificationRow(
         // Notification Text
         Column(
             modifier = Modifier
-                .weight(1f)
+                .weight(1f)  // Removed parentheses here
                 .padding(horizontal = 12.dp)
         ) {
             Text(
