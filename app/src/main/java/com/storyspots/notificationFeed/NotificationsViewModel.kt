@@ -96,4 +96,8 @@ class NotificationsViewModel : ViewModel() {
             }
         }
     }
+
+    fun refreshNotifications() {
+        fetchNotificationsFromFirestore()
+    }
 }
