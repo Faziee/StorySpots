@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
+import com.storyspots.model.NotificationItem
 import kotlinx.coroutines.tasks.await
 
 class NotificationSender {
@@ -13,34 +14,34 @@ class NotificationSender {
     suspend fun sendNewPostNotification(
         postTitle: String,
         postId: String,
-        authorName: String
+        authorName: String,
+        authorProfileImageUrl: String? = null
     ) {
         val currentUserId = auth.uid ?: return
-        Log.d("NOTIF", "Creating single notification for postId=$postId by user=$currentUserId")
+        Log.d("NotificationSender", "Creating notification for postId=$postId by user=$currentUserId")
 
         try {
-            val notificationId = postId
+            val storyRef = db.collection("story").document(postId)
 
-            val notification = hashMapOf(
-                "id" to notificationId,
-                "title" to postTitle,
-                "message" to "New story from $authorName",
-                "created_at" to Timestamp.now(),
-                "readBy" to listOf<String>(),
-                "authorId" to currentUserId,
-                "story" to db.collection("story").document(postId)
+            val notification = NotificationItem(
+                id = postId,
+                title = postTitle,
+                message = "New story from $authorName",
+                created_at = Timestamp.now(),
+                authorId = currentUserId,
+                story = storyRef,
+                imageUrl = authorProfileImageUrl
             )
 
             db.collection("notification")
-                .document(notificationId)
-                .set(notification)
+                .document(notification.id)
+                .set(notification.toMap())
                 .await()
 
-            Log.d("NOTIF", "Notification created for post $postId")
+            Log.d("NotificationSender", "Notification created successfully for post $postId")
 
         } catch (e: Exception) {
-            Log.e("NOTIF", "Failed to create notification", e)
+            Log.e("NotificationSender", "Failed to create notification for post $postId", e)
         }
     }
-
 }
