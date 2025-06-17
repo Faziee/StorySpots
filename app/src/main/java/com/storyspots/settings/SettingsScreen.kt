@@ -31,8 +31,11 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.storyspots.ui.theme.*
 import kotlinx.coroutines.launch
+import com.google.firebase.Timestamp
 import com.storyspots.login.LoginActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +48,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
     var showChangeProfilePictureDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var imageRefreshTrigger by remember { mutableIntStateOf(0) }
+    val isUploading by settingsViewModel.isUploadingImage.collectAsState()
+    val uploadedUrl by settingsViewModel.uploadedImageUrl.collectAsState()
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -69,6 +74,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
+            // Header with profile section
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -81,6 +87,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Profile Picture
                     key("profile_image_$imageRefreshTrigger") { // Key based on trigger
                         Box(
                             modifier = Modifier
@@ -132,6 +139,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         }
 
         item {
+            // Settings Options
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -150,14 +158,14 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
 
                     Divider(color = LightGray, thickness = 1.dp)
 
-                    SettingsItem(
-                        icon = Icons.Default.Email,
-                        title = "Change Email",
-                        subtitle = userData.email,
-                        onClick = { showChangeEmailDialog = true }
-                    )
+//                    SettingsItem(
+//                        icon = Icons.Default.Email,
+//                        title = "Change Email",
+//                        subtitle = userData.email,
+//                        onClick = { showChangeEmailDialog = true }
+//                    )
 
-                    Divider(color = LightGray, thickness = 1.dp)
+//                    Divider(color = LightGray, thickness = 1.dp)
 
                     SettingsItem(
                         icon = Icons.Default.Lock,
@@ -179,6 +187,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         }
 
         item {
+            // Danger Zone
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -241,6 +250,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         }
     }
 
+    // Dialogs
+
     if (showChangeProfilePictureDialog) {
         ChangeProfilePictureDialog(
             currentImageUrl = userData.profileImageUrl,
@@ -285,23 +296,23 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         )
     }
 
-    if (showChangeEmailDialog) {
-        ChangeEmailDialog(
-            currentEmail = userData.email,
-            onDismiss = { showChangeEmailDialog = false },
-            onConfirm = { newEmail, password ->
-                scope.launch {
-                    isLoading = true
-                    val result = settingsViewModel.changeEmail(newEmail, password, context)
-                    if (result is SettingsResult.Success) {
-                        userData = userData.copy(email = newEmail)
-                    }
-                    isLoading = false
-                    showChangeEmailDialog = false
-                }
-            }
-        )
-    }
+//    if (showChangeEmailDialog) {
+//        ChangeEmailDialog(
+//            currentEmail = userData.email,
+//            onDismiss = { showChangeEmailDialog = false },
+//            onConfirm = { newEmail, password ->
+//                scope.launch {
+//                    isLoading = true
+//                    val result = settingsViewModel.changeEmail(newEmail, password, context)
+//                    if (result is SettingsResult.Success) {
+//                        userData = userData.copy(email = newEmail)
+//                    }
+//                    isLoading = false
+//                    showChangeEmailDialog = false
+//                }
+//            }
+//        )
+//    }
 
     if (showChangePasswordDialog) {
         ChangePasswordDialog(
@@ -323,7 +334,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
             onConfirm = { password ->
                 scope.launch {
                     isLoading = true
-                    settingsViewModel.deleteAccount(password, context)
+                    val result = settingsViewModel.deleteAccount(password, context)
                     isLoading = false
                     showDeleteAccountDialog = false
 
@@ -397,6 +408,7 @@ fun ChangeProfilePictureDialog(
 ) {
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -435,6 +447,7 @@ fun ChangeProfilePictureDialog(
                 ) {
                     when {
                         selectedImageUri != null -> {
+                            // Show selected image
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(selectedImageUri)
@@ -445,6 +458,7 @@ fun ChangeProfilePictureDialog(
                             )
                         }
                         currentImageUrl.isNotEmpty() -> {
+                            // Show current image
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(currentImageUrl)
@@ -455,6 +469,7 @@ fun ChangeProfilePictureDialog(
                             )
                         }
                         else -> {
+                            // Show default icon
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Default Profile",
@@ -467,6 +482,7 @@ fun ChangeProfilePictureDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Button to select image
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
                     colors = ButtonDefaults.buttonColors(containerColor = Pink40),
@@ -485,11 +501,12 @@ fun ChangeProfilePictureDialog(
                     )
                 }
 
+                // Show selected image info
                 selectedImageUri?.let {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "New image selected",
-                        color = Black,
+                        text = "✓ New image selected",
+                        color = Pink,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -521,6 +538,7 @@ fun ChangeProfilePictureDialog(
         }
     )
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -627,11 +645,6 @@ fun ChangeEmailDialog(
                         focusedLabelColor = Pink
                     ),
                     modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Note: Once you have verified your new email please sign out and then back in.",
-                    color = LightText
                 )
             }
         },
