@@ -2,133 +2,102 @@ package com.storyspots.notificationFeed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.Timestamp
 import com.storyspots.model.NotificationItem
-import com.storyspots.notificationFeed.NotificationUtils
+import com.storyspots.model.NotificationWithUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.Date
 
 class NotificationsViewModel : ViewModel() {
-    // State holders for different notification categories
-    private val _newNotifications = MutableStateFlow<List<NotificationItem>>(emptyList())
-    val newNotifications: StateFlow<List<NotificationItem>> = _newNotifications.asStateFlow()
+    private val _newNotifications = MutableStateFlow<List<NotificationWithUser>>(emptyList())
+    val newNotifications: StateFlow<List<NotificationWithUser>> = _newNotifications.asStateFlow()
 
-    private val _lastWeekNotifications = MutableStateFlow<List<NotificationItem>>(emptyList())
-    val lastWeekNotifications: StateFlow<List<NotificationItem>> = _lastWeekNotifications.asStateFlow()
+    private val _lastWeekNotifications = MutableStateFlow<List<NotificationWithUser>>(emptyList())
+    val lastWeekNotifications: StateFlow<List<NotificationWithUser>> = _lastWeekNotifications.asStateFlow()
 
-    private val _lastMonthNotifications = MutableStateFlow<List<NotificationItem>>(emptyList())
-    val lastMonthNotifications: StateFlow<List<NotificationItem>> = _lastMonthNotifications.asStateFlow()
+    private val _lastMonthNotifications = MutableStateFlow<List<NotificationWithUser>>(emptyList())
+    val lastMonthNotifications: StateFlow<List<NotificationWithUser>> = _lastMonthNotifications.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
-        println("ViewModel initialized, starting fetch")
         fetchNotificationsFromFirestore()
     }
 
     fun fetchNotificationsFromFirestore() {
-        println("Starting fetchNotificationsFromFirestore")
-
         viewModelScope.launch {
             _isLoading.value = true
+            val db = FirebaseFirestore.getInstance()
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+            // Early return if user is not authenticated
+            if (currentUserId == null) {
+                _isLoading.value = false
+                return@launch
+            }
 
             try {
-                println("Fetching all notifications")
-                val db = FirebaseFirestore.getInstance()
-                val notificationsRef = db.collection("notification")
-
-                val querySnapshot = notificationsRef
+                val querySnapshot = db.collection("notification")
                     .orderBy("created_at", Query.Direction.DESCENDING)
                     .get()
                     .await()
 
-                println("Query returned ${querySnapshot.documents.size} documents")
-
-                val notifications = mutableListOf<NotificationItem>()
+                val enrichedNotifications = mutableListOf<NotificationWithUser>()
 
                 for (doc in querySnapshot.documents) {
                     try {
-                        println("Processing document: ${doc.id}")
-                        println("Document data: ${doc.data}")
-
-                        // Use document ID as the notification ID
                         val notificationId = doc.id
-
-                        // Get basic fields
-                        val createdAt = doc.getTimestamp("created_at")?.toDate() ?: Date()
+                        val createdAt = doc.getTimestamp("created_at") ?: Timestamp.now()
                         val title = doc.getString("title") ?: "Notification"
-                        val message = doc.getString("message") ?: ""
-                        val read = doc.getBoolean("read") ?: false
+                        val message = doc.getString("message")
+                        val authorId = doc.getString("authorId") ?: continue
 
-                        // Handle fromUserId - could be from a reference or direct field
-                        var fromUserId = ""
-                        var imageUrl = ""
+                        // Skip notifications by the current user
+                        if (authorId == currentUserId) continue
 
-                        val fromRef = doc.getDocumentReference("from")
-                        if (fromRef != null) {
-                            try {
-                                val userDoc = fromRef.get().await()
-                                fromUserId = userDoc.id
-                                imageUrl = userDoc.getString("profile_picture_url")
-                                    ?: userDoc.getString("profileImageUrl")
-                                            ?: userDoc.getString("profile_picture")
-                                            ?: ""
-                            } catch (e: Exception) {
-                                println("Error fetching user data: ${e.message}")
-                                fromUserId = doc.getString("fromUserId") ?: ""
-                            }
-                        } else {
-                            fromUserId = doc.getString("fromUserId") ?: ""
-                            imageUrl = doc.getString("imageUrl") ?: ""
-                        }
+                        val storyRef = doc.getDocumentReference("story") ?: continue
+                        val imageUrl = doc.getString("imageUrl")
 
-                        // Handle story - could be from a reference or direct field
-                        var storyId = ""
-                        val storyRef = doc.getDocumentReference("story")
-                        if (storyRef != null) {
-                            storyId = storyRef.id
-                        } else {
-                            storyId = doc.getString("story") ?: ""
-                        }
-
-                        val notificationItem = NotificationItem(
+                        val baseNotification = NotificationItem(
                             id = notificationId,
-                            createdAt = createdAt,
+                            created_at = createdAt,
                             title = title,
                             message = message,
-                            read = read,
-                            fromUserId = fromUserId,
-                            story = storyId,
+                            authorId = authorId,
+                            story = storyRef,
                             imageUrl = imageUrl
                         )
 
-                        notifications.add(notificationItem)
-                        println("Successfully processed notification: $notificationItem")
+                        val userDoc = db.collection("users").document(authorId).get().await()
+                        val username = userDoc.getString("username") ?: "Unknown"
+                        val profileImageUrl = userDoc.getString("profileImageUrl")
 
+                        enrichedNotifications.add(
+                            NotificationWithUser(
+                                notification = baseNotification,
+                                username = username,
+                                profileImageUrl = profileImageUrl
+                            )
+                        )
                     } catch (e: Exception) {
                         println("Error processing notification ${doc.id}: ${e.message}")
-                        e.printStackTrace()
                     }
                 }
 
-                println("Processed ${notifications.size} notifications total")
-
-                val (new, lastWeek, lastMonth) = NotificationUtils.categorizeNotifications(notifications)
-                println("Categorized: New=${new.size}, LastWeek=${lastWeek.size}, LastMonth=${lastMonth.size}")
+                val (new, lastWeek, lastMonth) = NotificationUtils.categorizeNotifications(enrichedNotifications)
 
                 _newNotifications.value = new
                 _lastWeekNotifications.value = lastWeek
                 _lastMonthNotifications.value = lastMonth
 
             } catch (e: Exception) {
-                e.printStackTrace()
                 println("Firestore fetch error: ${e.message}")
                 _newNotifications.value = emptyList()
                 _lastWeekNotifications.value = emptyList()
@@ -139,18 +108,7 @@ class NotificationsViewModel : ViewModel() {
         }
     }
 
-    fun markAsViewed(notificationId: String) {
-        viewModelScope.launch {
-            try {
-                val db = FirebaseFirestore.getInstance()
-                db.collection("notification")
-                    .document(notificationId)
-                    .update("read", true)
-                    .await()
-                fetchNotificationsFromFirestore()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+    fun refreshNotifications() {
+        fetchNotificationsFromFirestore()
     }
 }

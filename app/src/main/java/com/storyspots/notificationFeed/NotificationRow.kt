@@ -1,6 +1,5 @@
 package com.storyspots.notificationFeed
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -19,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.storyspots.model.NotificationItem
 import com.storyspots.ui.theme.DarkText
 import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.Pink
@@ -27,11 +25,12 @@ import com.storyspots.ui.theme.White
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.graphics.Color
+import com.storyspots.model.NotificationWithUser
 
 @Composable
 fun NotificationRow(
-    item: NotificationItem,
-    onViewClick: (NotificationItem) -> Unit = {}
+    item: NotificationWithUser,
+    onViewClick: (NotificationWithUser) -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -47,13 +46,13 @@ fun NotificationRow(
             contentAlignment = Alignment.Center
         ) {
             val context = LocalContext.current
-            if (!item.imageUrl.isNullOrBlank()) {
+            if (!item.profileImageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(item.imageUrl)
+                        .data(item.profileImageUrl)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "${item.fromUserId}'s profile picture",
+                    contentDescription = "${item.username}'s profile picture",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -62,7 +61,7 @@ fun NotificationRow(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val initial = item.fromUserId.firstOrNull()?.toString() ?: "?"
+                    val initial = item.username.firstOrNull()?.toString() ?: "?"
                     Text(
                         text = initial,
                         color = Color.White,
@@ -72,27 +71,25 @@ fun NotificationRow(
             }
         }
 
-        // Notification Text
         Column(
             modifier = Modifier
-                .weight(1f)  // Removed parentheses here
+                .weight(1f)
                 .padding(horizontal = 12.dp)
         ) {
             Text(
-                text = item.fromUserId,
+                text = item.username,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkText
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = item.message ?: item.fromUserId,
+                text = item.notification.message ?: "No message",
                 fontSize = 14.sp,
                 color = LightText
             )
         }
 
-        // View Button
         Button(
             onClick = { onViewClick(item) },
             colors = ButtonDefaults.buttonColors(
