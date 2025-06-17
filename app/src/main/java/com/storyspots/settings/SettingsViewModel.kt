@@ -12,8 +12,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.storyspots.services.cloudinary.CloudinaryService
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -34,16 +32,14 @@ sealed class SettingsResult {
 class SettingsViewModel(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    //private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) : ViewModel(){
 
     private var cloudinaryService: CloudinaryService? = null
 
     private val _isUploadingImage = MutableStateFlow(false)
-    val isUploadingImage: StateFlow<Boolean> = _isUploadingImage.asStateFlow()
 
     private val _uploadedImageUrl = MutableStateFlow<String?>(null)
-    val uploadedImageUrl: StateFlow<String?> = _uploadedImageUrl.asStateFlow()
+
 
     fun initializeCloudinaryService(context: Context) {
         cloudinaryService = CloudinaryService(context)
@@ -106,59 +102,64 @@ class SettingsViewModel(
         }
     }
 
-//    suspend fun changeEmail(newEmail: String, password: String, context: Context): SettingsResult {
-//        return try {
-//            val user = auth.currentUser
-//            if (user != null && user.email != null) {
-//                // Re-authenticate user
-//                val credential = EmailAuthProvider.getCredential(user.email!!, password)
-//                user.reauthenticate(credential).await()
-//
-//                // Update email in Firebase Auth
-//                user.updateEmail(newEmail).await()
-//
-//                // Update email in Firestore
-//                firestore.collection("users").document(user.uid)
-//                    .update("email", newEmail)
-//                    .await()
-//
-//                Toast.makeText(context, "Email updated successfully", Toast.LENGTH_SHORT).show()
-//                SettingsResult.Success
-//            } else {
-//                val errorMessage = "User not found"
-//                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-//                SettingsResult.Error(errorMessage)
-//            }
-//        } catch (e: Exception) {
-//            Log.e("SettingsViewModel", "Error changing email", e)
-//            val errorMessage = "Failed to update email: ${e.message}"
-//            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
-//            SettingsResult.Error(errorMessage)
-//        }
-//    }
+    suspend fun changeEmail(newEmail: String, password: String, context: Context): SettingsResult {
+        return try {
+            val user = auth.currentUser
+            if (user != null && user.email != null) {
+
+                val credential = EmailAuthProvider.getCredential(user.email!!, password)
+
+                user.reauthenticate(credential).await()
+
+                user.verifyBeforeUpdateEmail(newEmail).await()
+
+                firestore.collection("users").document(user.uid)
+                    .update("email", newEmail)
+                    .await()
+
+                Toast.makeText(context, "Email updated successfully.", Toast.LENGTH_SHORT).show()
+
+                SettingsResult.Success
+            } else {
+                val errorMessage = "User not found"
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+
+                SettingsResult.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            Log.e("SettingsViewModel", "Error changing email", e)
+            val errorMessage = "Failed to update email: ${e.message}"
+            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+
+            SettingsResult.Error(errorMessage)
+        }
+    }
 
     suspend fun changePassword(oldPassword: String, newPassword: String, context: Context): SettingsResult {
         return try {
             val user = auth.currentUser
             if (user != null && user.email != null) {
-                // Re-authenticate user
+
                 val credential = EmailAuthProvider.getCredential(user.email!!, oldPassword)
+
                 user.reauthenticate(credential).await()
 
-                // Update password
                 user.updatePassword(newPassword).await()
 
                 Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+
                 SettingsResult.Success
             } else {
                 val errorMessage = "User not found"
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+
                 SettingsResult.Error(errorMessage)
             }
         } catch (e: Exception) {
             Log.e("SettingsViewModel", "Error changing password", e)
             val errorMessage = "Failed to update password: ${e.message}"
             Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+
             SettingsResult.Error(errorMessage)
         }
     }
@@ -167,52 +168,43 @@ class SettingsViewModel(
         return try {
             val user = auth.currentUser
             if (user != null && user.email != null) {
-                // Re-authenticate user
+
                 val credential = EmailAuthProvider.getCredential(user.email!!, password)
+
                 user.reauthenticate(credential).await()
 
-                // Delete user data from Firestore
                 firestore.collection("users").document(user.uid).delete().await()
 
-                // Delete profile image from Storage
-                try {
-                    //storage.reference.child("profile_images/${user.uid}").delete().await()
-                } catch (e: Exception) {
-                    Log.w("SettingsViewModel", "No profile image to delete or error deleting", e)
-                }
-
-                // Delete user stories, notifications, etc.
                 deleteUserRelatedData(user.uid)
 
-                // Delete user account
                 user.delete().await()
 
                 Toast.makeText(context, "Account deleted successfully", Toast.LENGTH_SHORT).show()
-                SettingsResult.Success
 
+                SettingsResult.Success
             } else {
                 val errorMessage = "User not found"
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+
                 SettingsResult.Error(errorMessage)
             }
         } catch (e: Exception) {
             Log.e("SettingsViewModel", "Error deleting account", e)
             val errorMessage = "Failed to delete account: ${e.message}"
             Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+
             SettingsResult.Error(errorMessage)
         }
     }
 
     private suspend fun deleteUserRelatedData(userId: String) {
         try {
-            // Delete user's stories
             val storiesQuery = firestore.collection("story").whereEqualTo("user", userId).get().await()
             for (document in storiesQuery.documents) {
                 document.reference.delete()
             }
 
-            // Delete user's notifications
-            val notificationsQuery = firestore.collection("notification").whereEqualTo("userId", userId).get().await()
+            val notificationsQuery = firestore.collection("notification").whereEqualTo("from", userId).get().await()
             for (document in notificationsQuery.documents) {
                 document.reference.delete()
             }
@@ -222,19 +214,16 @@ class SettingsViewModel(
         }
     }
 
-    // Fixed upload function that properly waits for completion
     suspend fun updateProfileImage(imageUri: Uri, userId: String, context: Context): String? {
         return try {
-            // Check if image is currently uploading
+
             if (_isUploadingImage.value) {
                 Toast.makeText(context, "Please wait for current upload to complete", Toast.LENGTH_SHORT).show()
                 return null
             }
 
-            // Start upload to Cloudinary
             uploadImageToCloudinary(imageUri)
 
-            // Wait for upload to complete using suspendCancellableCoroutine
             val uploadResult = suspendCancellableCoroutine<String?> { continuation ->
                 val job = viewModelScope.launch {
                     cloudinaryService?.uploadState?.collectLatest { uploadState ->
@@ -242,13 +231,13 @@ class SettingsViewModel(
                             is CloudinaryService.UploadState.Success -> {
                                 Log.d("ProfileUpdate", "Upload successful: ${uploadState.url}")
 
-                                // Update Firestore with new Cloudinary image URL
                                 try {
                                     firestore.collection("users").document(userId)
                                         .update("profileImageUrl", uploadState.url)
                                         .await()
 
                                     Toast.makeText(context, "Profile picture updated successfully", Toast.LENGTH_SHORT).show()
+
                                     continuation.resume(uploadState.url)
                                 } catch (e: Exception) {
                                     Log.e("ProfileUpdate", "Error updating Firestore", e)
@@ -259,6 +248,7 @@ class SettingsViewModel(
                             is CloudinaryService.UploadState.Error -> {
                                 Log.e("ProfileUpdate", "Upload failed: ${uploadState.message}")
                                 Toast.makeText(context, "Failed to update profile picture: ${uploadState.message}", Toast.LENGTH_LONG).show()
+
                                 continuation.resume(null)
                             }
                             else -> {
