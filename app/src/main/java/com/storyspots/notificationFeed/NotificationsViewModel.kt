@@ -10,6 +10,7 @@ import com.storyspots.model.NotificationWithUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -34,6 +35,13 @@ class NotificationsViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             val db = FirebaseFirestore.getInstance()
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+            // Early return if user is not authenticated
+            if (currentUserId == null) {
+                _isLoading.value = false
+                return@launch
+            }
 
             try {
                 val querySnapshot = db.collection("notification")
@@ -50,6 +58,10 @@ class NotificationsViewModel : ViewModel() {
                         val title = doc.getString("title") ?: "Notification"
                         val message = doc.getString("message")
                         val authorId = doc.getString("authorId") ?: continue
+
+                        // Skip notifications by the current user
+                        if (authorId == currentUserId) continue
+
                         val storyRef = doc.getDocumentReference("story") ?: continue
                         val imageUrl = doc.getString("imageUrl")
 
@@ -63,7 +75,6 @@ class NotificationsViewModel : ViewModel() {
                             imageUrl = imageUrl
                         )
 
-                        // Fetch the author (user) data
                         val userDoc = db.collection("users").document(authorId).get().await()
                         val username = userDoc.getString("username") ?: "Unknown"
                         val profileImageUrl = userDoc.getString("profileImageUrl")
