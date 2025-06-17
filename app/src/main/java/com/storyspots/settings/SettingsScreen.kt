@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,9 +37,6 @@ import com.storyspots.ui.theme.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
 import com.storyspots.login.LoginActivity
-import java.util.UUID
-import androidx.compose.runtime.rememberCoroutineScope
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,32 +45,25 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
     var showChangeEmailDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showChangeProfilePictureDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    val userData by settingsViewModel.userData.collectAsState()
+    var imageRefreshTrigger by remember { mutableIntStateOf(0) }
     val isUploading by settingsViewModel.isUploadingImage.collectAsState()
-
-
+    val uploadedUrl by settingsViewModel.uploadedImageUrl.collectAsState()
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    settingsViewModel.initializeCloudinaryService(context)
+
+    // User data state
+    var userData by remember { mutableStateOf(UserData()) }
+
     // Load user data on composition
     LaunchedEffect(Unit) {
         isLoading = true
-        settingsViewModel.loadUserData()
-        settingsViewModel.initializeCloudinaryService(context)
+        userData = settingsViewModel.loadUserData()
         isLoading = false
-    }
-
-    // Image picker launcher
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
-                settingsViewModel.uploadProfileImage(it, userData.userId, context)
-            }
-        }
     }
 
     LazyColumn(
@@ -97,46 +88,39 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Profile Picture
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Pink80)
-                            .border(3.dp, Pink80, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when {
-                            isUploading -> {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(30.dp),
-                                    color = Pink40
-                                )
-                            }
-
-                            userData.profileImageUrl.isNotEmpty() -> {
+                    key("profile_image_$imageRefreshTrigger") { // Key based on trigger
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(Pink80)
+                                .border(3.dp, Pink80, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (userData.profileImageUrl.isNotEmpty()) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(LocalContext.current)
-                                        .data(userData.profileImageUrl)
+                                        .data("${userData.profileImageUrl}?refresh=${imageRefreshTrigger}")
                                         .crossfade(true)
+                                        .memoryCachePolicy(CachePolicy.DISABLED)
+                                        .diskCachePolicy(CachePolicy.DISABLED)
                                         .build(),
                                     contentDescription = "Profile Picture",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
-                            }
-
-                            else ->
+                            } else {
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Default Profile",
                                     modifier = Modifier.size(40.dp),
                                     tint = Pink40
                                 )
+                            }
                         }
                     }
 
-
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = userData.username,
@@ -174,14 +158,14 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
 
                     Divider(color = LightGray, thickness = 1.dp)
 
-                    SettingsItem(
-                        icon = Icons.Default.Email,
-                        title = "Change Email",
-                        subtitle = userData.email,
-                        onClick = { showChangeEmailDialog = true }
-                    )
+//                    SettingsItem(
+//                        icon = Icons.Default.Email,
+//                        title = "Change Email",
+//                        subtitle = userData.email,
+//                        onClick = { showChangeEmailDialog = true }
+//                    )
 
-                    Divider(color = LightGray, thickness = 1.dp)
+//                    Divider(color = LightGray, thickness = 1.dp)
 
                     SettingsItem(
                         icon = Icons.Default.Lock,
@@ -195,8 +179,8 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                     SettingsItem(
                         icon = Icons.Default.AccountBox,
                         title = "Change Profile Picture",
-                        subtitle = "Update your avatar",
-                        onClick = { imagePickerLauncher.launch("image/*") }
+                        subtitle = "Update your picture",
+                        onClick = { showChangeProfilePictureDialog = true }
                     )
                 }
             }
@@ -253,43 +237,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                 }
             }
         }
-
-        item {
-            // Test button (keep your friend's test functionality)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = LightPink),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Send Test Notification",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = DarkText
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = { sendTestNotification() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Pink),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Send Test Notification", color = White)
-                    }
-                }
-            }
-        }
     }
 
-    if (isLoading && !isUploading) {
+    if (isLoading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -301,6 +251,33 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
     }
 
     // Dialogs
+
+    if (showChangeProfilePictureDialog) {
+        ChangeProfilePictureDialog(
+            currentImageUrl = userData.profileImageUrl,
+            onDismiss = { showChangeProfilePictureDialog = false },
+            onConfirm = { selectedUri ->
+                scope.launch {
+                    isLoading = true
+                    try {
+                        val newImageUrl = settingsViewModel.updateProfileImage(selectedUri, userData.userId, context)
+                        newImageUrl?.let { url ->
+                            userData = userData.copy(profileImageUrl = url.toString())
+                            imageRefreshTrigger++ // Trigger immediate refresh
+                            Log.d("ProfileUpdate", "Updated image URL: $url, trigger: $imageRefreshTrigger")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ProfileUpdate", "Error updating profile image", e)
+                    } finally {
+                        isLoading = false
+                        showChangeProfilePictureDialog = false
+                    }
+                }
+            }
+        )
+    }
+
+
     if (showChangeUsernameDialog) {
         ChangeUsernameDialog(
             currentUsername = userData.username,
@@ -309,6 +286,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
                 scope.launch {
                     isLoading = true
                     val result = settingsViewModel.changeUsername(userData.userId, newUsername, context)
+                    if (result is SettingsResult.Success) {
+                        userData = userData.copy(username = newUsername)
+                    }
                     isLoading = false
                     showChangeUsernameDialog = false
                 }
@@ -316,20 +296,23 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = SettingsViewModel() ) 
         )
     }
 
-    if (showChangeEmailDialog) {
-        ChangeEmailDialog(
-            currentEmail = userData.email,
-            onDismiss = { showChangeEmailDialog = false },
-            onConfirm = { newEmail, password ->
-                scope.launch {
-                    isLoading = true
-                    val result = settingsViewModel.changeEmail(newEmail, password, context)
-                    isLoading = false
-                    showChangeEmailDialog = false
-                }
-            }
-        )
-    }
+//    if (showChangeEmailDialog) {
+//        ChangeEmailDialog(
+//            currentEmail = userData.email,
+//            onDismiss = { showChangeEmailDialog = false },
+//            onConfirm = { newEmail, password ->
+//                scope.launch {
+//                    isLoading = true
+//                    val result = settingsViewModel.changeEmail(newEmail, password, context)
+//                    if (result is SettingsResult.Success) {
+//                        userData = userData.copy(email = newEmail)
+//                    }
+//                    isLoading = false
+//                    showChangeEmailDialog = false
+//                }
+//            }
+//        )
+//    }
 
     if (showChangePasswordDialog) {
         ChangePasswordDialog(
@@ -415,6 +398,147 @@ fun SettingsItem(
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChangeProfilePictureDialog(
+    currentImageUrl: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Uri) -> Unit
+) {
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = White,
+        title = {
+            Text(
+                "Change Profile Picture",
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Select a new profile picture:",
+                    color = MediumText
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Current or selected image preview
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(Pink80)
+                        .border(3.dp, Pink80, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        selectedImageUri != null -> {
+                            // Show selected image
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(selectedImageUri)
+                                    .build(),
+                                contentDescription = "Selected Profile Picture",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        currentImageUrl.isNotEmpty() -> {
+                            // Show current image
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(currentImageUrl)
+                                    .build(),
+                                contentDescription = "Current Profile Picture",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        else -> {
+                            // Show default icon
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Default Profile",
+                                modifier = Modifier.size(60.dp),
+                                tint = Pink40
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Button to select image
+                Button(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Pink40),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.PhotoCamera,
+                        contentDescription = "Select Photo",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (selectedImageUri != null) "Change Selection" else "Select Photo",
+                        color = White
+                    )
+                }
+
+                // Show selected image info
+                selectedImageUri?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "✓ New image selected",
+                        color = Pink,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    selectedImageUri?.let { uri ->
+                        onConfirm(uri)
+                    }
+                },
+                enabled = selectedImageUri != null,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (selectedImageUri != null) Pink else MediumText
+                )
+            ) {
+                Text("Update Picture")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = MediumText)
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -682,31 +806,4 @@ fun DeleteAccountDialog(
             }
         }
     )
-}
-
-// Keep your original test notification function
-fun sendTestNotification() {
-    val userId = FirebaseAuth.getInstance().uid.orEmpty()
-    val db = FirebaseFirestore.getInstance()
-
-    val fromRef = db.collection("user").document(userId)
-    val storyId = "test_story_123"
-    val storyRef = db.collection("story").document(storyId)
-
-    val notificationId = db.collection("notification").document().id
-
-    val testNotification = hashMapOf(
-        "id" to notificationId,
-        "title" to "Dev Test",
-        "message" to "This is a test from button",
-        "created_at" to Timestamp.now(),
-        "read" to false,
-        "from" to fromRef,
-        "story" to storyRef
-    )
-
-    db.collection("notification").document(notificationId)
-        .set(testNotification)
-        .addOnSuccessListener { Log.d("SettingsScreen", "Test notification sent.") }
-        .addOnFailureListener { e -> Log.e("SettingsScreen", "Failed to send test notification", e) }
 }
