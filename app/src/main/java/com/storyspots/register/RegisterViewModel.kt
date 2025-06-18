@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
+import com.onesignal.OneSignal
 import com.storyspots.services.cloudinary.CloudinaryService
+import com.storyspots.utils.OneSignalManager
 import kotlinx.coroutines.flow.collectLatest
 
 data class RegisterUiState(
@@ -163,6 +165,9 @@ class RegisterViewModel : ViewModel() {
                     val profileImageUrl = _uploadedImageUrl.value
 
                     updateUserProfile(user.uid, currentState.username, profileImageUrl)
+
+                    OneSignalManager.registerUser(userId = user.uid)
+                    OneSignalManager.logCurrentStatus()
 
                     Toast.makeText(context, "Registration Successful", Toast.LENGTH_SHORT).show()
                     onSuccess()

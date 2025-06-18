@@ -22,6 +22,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlinx.coroutines.tasks.await
 import androidx.lifecycle.viewModelScope
+import com.storyspots.utils.OneSignalManager
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -200,6 +201,8 @@ class SettingsViewModel(
                 // Delete user stories, notifications, etc.
                 deleteUserRelatedData(user.uid)
 
+                OneSignalManager.logoutUser()
+
                 // Delete user account
                 user.delete().await()
 
@@ -330,6 +333,9 @@ class SettingsViewModel(
 
     fun logout(context: Context): SettingsResult {
         return try {
+
+            OneSignalManager.logoutUser()
+
             auth.signOut()
             // Clear user data on logout
             _userData.value = UserData()

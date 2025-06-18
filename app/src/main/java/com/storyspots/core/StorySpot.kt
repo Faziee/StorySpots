@@ -6,6 +6,9 @@ import com.cloudinary.android.MediaManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.onesignal.OneSignal
+import com.storyspots.utils.Constants
+import com.storyspots.utils.OneSignalManager
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -74,15 +77,25 @@ class StorySpot : Application() {
         launch {
             try {
                 val config = HashMap<String, String>().apply {
-                    put("cloud_name", "dviaaly3l")
-                    put("api_key", "478996327969175")
-                    put("api_secret", "3zb2ocMQWoRzLX2-QykpkZ-x06M")
+                    put("cloud_name", Constants.CLOUDINARY_CLOUD_NAME)
+                    put("api_key", Constants.CLOUDINARY_API_KEY)
+                    put("api_secret", Constants.CLOUDINARY_API_SECRET)
                 }
                 MediaManager.init(this@StorySpot, config)
                 cloudinaryInitialized.set(true)
                 Log.d("StorySpot", "Cloudinary initialized")
             } catch (e: Exception) {
                 Log.e("StorySpot", "Cloudinary initialization failed", e)
+            }
+        }
+
+        //----ONESIGNAL----//
+        launch {
+            try {
+                OneSignalManager.initialize(this@StorySpot, Constants.ONESIGNAL_APP_ID)
+                Log.d("StorySpot", "OneSignal initialized")
+            } catch (e: Exception) {
+                Log.e("StorySpot", "OneSignal initialization failed", e)
             }
         }
     }
