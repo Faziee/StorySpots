@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.mapbox.maps.MapView
 import com.storyspots.R
 import com.storyspots.core.managers.LocationsManager
+import com.storyspots.ui.theme.*
 
 @Composable
 fun RecenterButton(
@@ -31,7 +32,7 @@ fun RecenterButton(
             .size(48.dp)
             .padding(4.dp),
         shape = CircleShape,
-        color = Color(0xFFFF9CC7),
+        color = Pink80,
         shadowElevation = 4.dp
     ) {
         IconButton(
