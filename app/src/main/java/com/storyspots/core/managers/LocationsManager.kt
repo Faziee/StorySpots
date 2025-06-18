@@ -55,7 +55,7 @@ class LocationsManager(private val context: Context) {
                 _currentLocation.value = Point.fromLngLat(lng, lat)
             }
         } catch (e: Exception) {
-            Log.e("LocationManager", "Error loading last location", e)
+            Log.e("LocationsManager", "Error loading last location", e)
         }
     }
 
