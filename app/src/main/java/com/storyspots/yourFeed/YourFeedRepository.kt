@@ -115,13 +115,7 @@ class YourFeedRepository {
         }
     }
 
-    /**
-     * Check if user is authenticated
-     */
     fun isUserAuthenticated(): Boolean = auth.currentUser != null
 
-    /**
-     * Get current user ID
-     */
     fun getCurrentUserId(): String? = auth.currentUser?.uid
 }
