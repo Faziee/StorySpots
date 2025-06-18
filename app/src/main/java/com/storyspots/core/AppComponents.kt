@@ -1,7 +1,6 @@
 package com.storyspots.core
 
 import android.util.Log
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.storyspots.cache.StoryCache
 import com.storyspots.core.managers.*
@@ -11,7 +10,7 @@ import kotlinx.coroutines.*
 import kotlin.getValue
 
 object AppComponents {
-    // Coroutine scope for app-wide async operations
+
     val appScope = CoroutineScope(
         Dispatchers.Main +
                 SupervisorJob() +
@@ -20,7 +19,6 @@ object AppComponents {
                 }
     )
 
-    // Core managers - lazy loaded for performance
     val locationManager: LocationsManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LocationsManager(StorySpot.instance)
     }
@@ -41,20 +39,15 @@ object AppComponents {
         MapManager()
     }
 
-    // Map state manager for persistent pin management
     val mapStateManager = MapStateManager
 
     val storyCache: StoryCache by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         StoryCache(StorySpot.instance)
     }
 
-    // Services - lazy initialized singleton to prevent multiple initializations
     val cloudinaryService: CloudinaryService by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         CloudinaryService(StorySpot.instance)
     }
-
-    val auth: FirebaseAuth?
-        get() = if (StorySpot.isFirebaseReady) FirebaseAuth.getInstance() else null
 
     val firestore: FirebaseFirestore?
         get() = if (StorySpot.isFirebaseReady) FirebaseFirestore.getInstance() else null
@@ -63,7 +56,6 @@ object AppComponents {
         appScope.cancel()
     }
 
-    // Helper method to refresh stories globally
     fun refreshStories() {
         appScope.launch {
             try {

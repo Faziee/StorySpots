@@ -1,7 +1,6 @@
 package com.storyspots.core.managers
 
 import android.graphics.BitmapFactory
-import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
@@ -10,7 +9,6 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.storyspots.R
 import com.storyspots.core.StorySpot
 import com.storyspots.caption.MapLoader
-import com.storyspots.core.AppComponents
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +26,6 @@ class MapManager {
 
         MapLoader.initialize(mapView)
 
-        // Set up pin click listener
         MapLoader.setOnPinClickListener { storiesAtPin, offset ->
             // TODO: Handle pin clicks
         }

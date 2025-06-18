@@ -24,19 +24,15 @@ class LocationsManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
     private var moveListener: OnMoveListener? = null
 
-    // Expose current location as StateFlow
     private val _currentLocation = MutableStateFlow<Point?>(null)
     val currentLocation: StateFlow<Point?> = _currentLocation.asStateFlow()
 
-    private var hasCenteredOnFirstLocation = false
     private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
     private var isFollowingUser = true
 
     init {
         loadLastLocation()
     }
-
-    fun isFollowingUser(): Boolean = isFollowingUser
 
     fun enableFollowMode(mapView: MapView? = null) {
         isFollowingUser = true
@@ -94,12 +90,10 @@ class LocationsManager(private val context: Context) {
             override fun onMoveEnd(detector: MoveGestureDetector) {}
         }.also { mapView.gestures.addOnMoveListener(it) }
 
-        // Remove previous location listener if exists
         locationUpdateListener?.let {
             mapView.location.removeOnIndicatorPositionChangedListener(it)
         }
 
-        // Add new location listener
         locationUpdateListener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
                 _currentLocation.value = point
@@ -118,14 +112,14 @@ class LocationsManager(private val context: Context) {
 
     private fun initializeCameraPosition(mapView: MapView) {
         _currentLocation.value?.let { lastLocation ->
-            mapView.getMapboxMap().setCamera(
+            mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(lastLocation)
                     .zoom(15.0)
                     .build()
             )
         } ?: run {
-            mapView.getMapboxMap().setCamera(
+            mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(0.0, 0.0))
                     .zoom(1.0)
@@ -149,7 +143,7 @@ class LocationsManager(private val context: Context) {
             enableFollowMode(mapView)
             centerOnLocation(mapView, point, zoom)
             true
-        } ?: false
+        } == true
     }
 
     fun centerOnLocation(mapView: MapView?, point: Point, zoom: Double = 15.0) {
