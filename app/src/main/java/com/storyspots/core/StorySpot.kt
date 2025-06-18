@@ -15,15 +15,11 @@ class StorySpot : Application() {
         lateinit var instance: StorySpot
             private set
 
-        // Initialization flags for critical components
         private val firebaseInitialized = AtomicBoolean(false)
         private val cloudinaryInitialized = AtomicBoolean(false)
 
         val isFirebaseReady: Boolean
             get() = firebaseInitialized.get()
-
-        val isCloudinaryReady: Boolean
-            get() = cloudinaryInitialized.get()
 
         val isFullyInitialized: Boolean
             get() = firebaseInitialized.get() && cloudinaryInitialized.get()
@@ -35,10 +31,8 @@ class StorySpot : Application() {
         super.onCreate()
         instance = this
 
-        // Critical initialization only (must complete before UI)
         initializeCritical()
 
-        // Non-critical initialization (background)
         initScope.launch {
             initializeNonCritical()
         }
