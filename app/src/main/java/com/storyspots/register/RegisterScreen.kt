@@ -54,7 +54,6 @@ fun RegisterScreen(
         viewModel.initializeCloudinaryService(context)
     }
 
-    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->

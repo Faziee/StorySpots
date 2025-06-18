@@ -52,7 +52,7 @@ class MapManager {
                 pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
                 SimpleClustering.setupClustering(map, pointAnnotationManager!!, bitmap)
-                ClusterZoomHandler.setupClusterClickHandler(map, "clustering-pins")
+                ClusterZoomHandler.setupClusterClickHandler(map)
             }
         }
     }

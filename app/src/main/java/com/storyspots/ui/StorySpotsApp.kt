@@ -1,7 +1,6 @@
 package com.storyspots.ui
 
-import BottomNavBar
-import NavItem
+import com.storyspots.navigation.BottomNavBar
 import NotificationFeedScreen
 import android.Manifest
 import android.content.pm.PackageManager
@@ -23,7 +22,6 @@ import com.storyspots.core.AppComponents
 import com.storyspots.core.managers.NavigationScreen
 import com.storyspots.post.PostStoryScreen
 import com.storyspots.settings.SettingsScreen
-import com.storyspots.ui.MapScreen
 import com.storyspots.yourFeed.YourFeedScreen
 
 @Composable

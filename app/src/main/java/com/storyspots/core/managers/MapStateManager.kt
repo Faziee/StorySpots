@@ -73,9 +73,9 @@ object MapStateManager {
         val pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
         SimpleClustering.setupClustering(mapView, pointAnnotationManager, bitmap)
-        ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins")
+        ClusterZoomHandler.setupClusterClickHandler(mapView)
 
-        ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins") { point, pointCount ->
+        ClusterZoomHandler.setupClusterClickHandler(mapView) { point, pointCount ->
             Log.d(TAG, "Small cluster clicked at $point with $pointCount stories")
 
             val storiesAtLocation = currentStories.value.filter { story ->
