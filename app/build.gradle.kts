@@ -101,7 +101,13 @@ dependencies {
     //-----SERVICES: LOCATION-----
     implementation(libs.play.services.location.v2110)
 
-    //Login dependencies
+    //-----SERVICES: PUSH-NOTIFICATION-----
+    implementation(libs.onesignal)
+
+    //-----SERVICES: HTTP CLIENT-----
+    implementation(libs.okhttp)
+
+    //-----SERVICES: LOGIN-----
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
 
