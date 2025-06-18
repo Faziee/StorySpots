@@ -1,12 +1,16 @@
 package com.storyspots.login
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.firestore.FirebaseFirestore
+import com.onesignal.OneSignal
+import com.storyspots.utils.OneSignalManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +70,34 @@ class LoginViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 auth.signInWithEmailAndPassword(currentState.email, currentState.password).await()
+
+                // Setup OneSignal after successful Firebase login
+                auth.currentUser?.let { user ->
+                    try {
+                        // Get username from Firestore
+                        val userDoc = FirebaseFirestore.getInstance()
+                            .collection("user")
+                            .document(user.uid)
+                            .get()
+                            .await()
+
+                        val username = userDoc.getString("username") ?: "Unknown"
+
+                        // Use OneSignalManager to handle OneSignal login
+                        OneSignalManager.loginUser(
+                            userId = user.uid,
+                            username = username,
+                            email = user.email ?: ""
+                        )
+
+                        Log.d("LoginViewModel", "OneSignal setup successful for user: ${user.uid}")
+
+                    } catch (e: Exception) {
+                        Log.e("LoginViewModel", "Failed to setup OneSignal", e)
+                        // Don't fail the entire login if OneSignal fails
+                    }
+                }
+
                 Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
                 _uiState.value = _uiState.value.copy(isLoggedIn = true)
                 onSuccess()
