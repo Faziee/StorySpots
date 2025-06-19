@@ -17,6 +17,7 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.Timestamp
 import com.storyspots.caption.StoryData
 import com.storyspots.receiver.GeofenceReceiver
+import com.storyspots.utils.Constants
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import okhttp3.MediaType.Companion.toMediaType
@@ -34,9 +35,8 @@ class LocationNotificationManager(private val context: Context) {
     private val geofencingClient = LocationServices.getGeofencingClient(context)
     private val notificationSender = NotificationSender()
 
-    // You'll need to add these constants to your Constants class or define them here
-    private val oneSignalAppId = "YOUR_ONESIGNAL_APP_ID" // Replace with your actual app ID
-    private val oneSignalRestApiKey = "YOUR_ONESIGNAL_REST_API_KEY" // Replace with your actual API key
+    private val oneSignalAppId = Constants.ONESIGNAL_APP_ID
+    private val oneSignalRestApiKey = Constants.ONESIGNAL_REST_API_KEY
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -354,9 +354,21 @@ class LocationNotificationManager(private val context: Context) {
             val responseBody = response.body?.string()
 
             if (response.isSuccessful) {
-                Log.d("LocationNotificationManager", "Location notification sent successfully: $responseBody")
+                Log.d("LocationNotificationManager", "✅ Location notification sent successfully!")
+                Log.d("LocationNotificationManager", "OneSignal Response: $responseBody")
+
+                // Parse the response to get notification ID
+                try {
+                    val responseJson = JSONObject(responseBody ?: "")
+                    val notificationId = responseJson.optString("id", "unknown")
+                    Log.d("LocationNotificationManager", "📱 OneSignal Notification ID: $notificationId")
+                } catch (e: Exception) {
+                    Log.w("LocationNotificationManager", "Could not parse notification ID", e)
+                }
             } else {
-                Log.e("LocationNotificationManager", "Location notification failed: ${response.code} - $responseBody")
+                Log.e("LocationNotificationManager", "❌ Location notification failed!")
+                Log.e("LocationNotificationManager", "Response Code: ${response.code}")
+                Log.e("LocationNotificationManager", "Response Body: $responseBody")
             }
 
         } catch (e: Exception) {
@@ -396,5 +408,22 @@ class LocationNotificationManager(private val context: Context) {
     fun cleanup() {
         scope.cancel()
         stopLocationTracking()
+    }
+
+    // Add this to LocationNotificationManager
+    fun testDirectNotification() {
+        scope.launch {
+            Log.d("LocationNotificationManager", "🧪 Testing direct notification...")
+
+            val currentUserId = auth.uid ?: return@launch
+
+            sendLocationPushNotification(
+                "📍 Test Location Notification!",
+                "Direct test - bypassing geofence",
+                "Test Story",
+                "test_123",
+                currentUserId
+            )
+        }
     }
 }
