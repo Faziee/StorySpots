@@ -54,8 +54,6 @@ class StoryCache(private val context: Context) {
         }
     }
 
-    fun getStoryFromMemory(id: String): StoryData? = memoryCache.get(id)
-
     fun clearCache() {
         try {
             cacheFile.delete()

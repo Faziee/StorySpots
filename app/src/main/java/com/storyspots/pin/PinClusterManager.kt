@@ -102,7 +102,7 @@ class SimpleClustering {
         this.pinBitmap = pinBitmap
         Log.d(TAG, "Initializing clustering...")
 
-        mapView.getMapboxMap().getStyle { style ->
+        mapView.mapboxMap.getStyle { style ->
             try {
                 Log.d(TAG, "Style loaded, creating source...")
 
@@ -144,7 +144,6 @@ class SimpleClustering {
                 style.addSource(source)
                 Log.d(TAG, "Source added successfully")
 
-                // Remove existing layers if they exist
                 listOf("cluster-circles", "cluster-text", "unclustered-pins").forEach { layerId ->
                     try {
                         style.removeStyleLayer(layerId)
@@ -262,7 +261,7 @@ class SimpleClustering {
         }
 
         Log.d(TAG, "Updating data with ${pinData.size} pins")
-        mapView?.getMapboxMap()?.getStyle { style ->
+        mapView?.mapboxMap?.getStyle { style ->
             try {
                 val source = style.getSource(SOURCE_ID) as? GeoJsonSource
                 if (source != null) {

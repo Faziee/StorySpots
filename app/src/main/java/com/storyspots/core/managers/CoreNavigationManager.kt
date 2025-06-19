@@ -1,6 +1,6 @@
 package com.storyspots.core.managers
 
-import NavItem
+import com.storyspots.navigation.NavItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

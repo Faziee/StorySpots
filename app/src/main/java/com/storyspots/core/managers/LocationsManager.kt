@@ -34,8 +34,8 @@ class LocationsManager(private val context: Context) {
         loadLastLocation()
     }
 
-    fun isFollowingUser(): Boolean = isFollowingUser
 
+    fun isFollowingUser(): Boolean = isFollowingUser
 
     fun disableFollowMode() {
         isFollowingUser = false
@@ -49,7 +49,7 @@ class LocationsManager(private val context: Context) {
                 _currentLocation.value = Point.fromLngLat(lng, lat)
             }
         } catch (e: Exception) {
-            Log.e("LocationManager", "Error loading last location", e)
+            Log.e("LocationsManager", "Error loading last location", e)
         }
     }
 
@@ -106,14 +106,14 @@ class LocationsManager(private val context: Context) {
 
     private fun initializeCameraPosition(mapView: MapView) {
         _currentLocation.value?.let { lastLocation ->
-            mapView.getMapboxMap().setCamera(
+            mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(lastLocation)
                     .zoom(15.0)
                     .build()
             )
         } ?: run {
-            mapView.getMapboxMap().setCamera(
+            mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()
                     .center(Point.fromLngLat(0.0, 0.0))
                     .zoom(1.0)

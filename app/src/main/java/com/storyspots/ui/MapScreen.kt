@@ -1,6 +1,5 @@
 package com.storyspots.ui
 
-import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -10,25 +9,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.mapbox.geojson.Point
 import com.mapbox.maps.MapInitOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
 import androidx.compose.ui.geometry.Offset
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.storyspots.cache.StoryCache
 import com.storyspots.caption.DismissibleStoryStack
 import com.storyspots.caption.MapLoader
 import com.storyspots.caption.StoryData
-import com.storyspots.caption.fetchAllStories
 import com.storyspots.caption.toStoryData
 import com.storyspots.core.AppComponents
 import com.storyspots.core.managers.LocationsManager
-import com.storyspots.location.RecenterButton
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +78,8 @@ fun MapScreen() {
             Log.d("MapScreen", "MapScreen disposed")
             mapView?.let { view ->
                 AppComponents.locationManager.cleanup(view)
+                AppComponents.mapManager.cleanup()
+                MapLoader.cleanup()
             }
         }
     }
@@ -96,7 +92,7 @@ fun MapScreen() {
                 val mapInitOptions = MapInitOptions(context = ctx)
                 MapView(ctx, mapInitOptions).also { map ->
                     mapView = map
-                    map.getMapboxMap().loadStyleUri("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") { style ->
+                    map.mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") { style ->
                         AppComponents.appScope.launch {
                             if (!map.isDestroyed) {
                                 Log.d("MapScreen", "Style loaded, initializing map")
@@ -203,7 +199,7 @@ private suspend fun initializeMapAsync(
                     }
 
                     // Set up cluster zoom handler with small cluster callback
-                    ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins") { point, pointCount ->
+                    ClusterZoomHandler.setupClusterClickHandler(mapView) { point, pointCount ->
                         Log.d("MapScreen", "Small cluster clicked at $point with $pointCount stories")
 
                         // Get stories near this cluster point

@@ -1,4 +1,3 @@
-// RegisterActivity.kt
 package com.storyspots.register
 
 import android.content.Intent
