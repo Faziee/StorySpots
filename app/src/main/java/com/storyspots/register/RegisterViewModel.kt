@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
-import com.onesignal.OneSignal
 import com.storyspots.services.cloudinary.CloudinaryService
 import com.storyspots.utils.OneSignalManager
 import kotlinx.coroutines.flow.collectLatest
@@ -28,7 +27,8 @@ data class RegisterUiState(
     val selectedImageUri: Uri? = null,
     val isLoading: Boolean = false,
     val showPasswordHints: Boolean = false,
-    val isUploadingImage: Boolean = false
+    val isUploadingImage: Boolean = false,
+    val permissionDenied: Boolean = false
 )
 
 data class PasswordValidation(
@@ -103,9 +103,10 @@ class RegisterViewModel : ViewModel() {
     }
 
     fun updateSelectedImage(uri: Uri?) {
-        _uiState.value = _uiState.value.copy(selectedImageUri = uri)
+        _uiState.value = _uiState.value.copy(
+            selectedImageUri = uri,
+            permissionDenied = false)
 
-        // Upload to Cloudinary when image is selected
         uri?.let {
             uploadImageToCloudinary(it)
         }
