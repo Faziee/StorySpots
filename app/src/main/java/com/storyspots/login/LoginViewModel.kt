@@ -32,7 +32,6 @@ class LoginViewModel : ViewModel() {
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        // Check if user is already logged in
         checkCurrentUser()
     }
 
@@ -101,9 +100,9 @@ class LoginViewModel : ViewModel() {
                 Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
                 _uiState.value = _uiState.value.copy(isLoggedIn = true)
                 onSuccess()
-            } catch (e: FirebaseAuthInvalidUserException) {
+            } catch (_: FirebaseAuthInvalidUserException) {
                 Toast.makeText(context, "No account found with this email", Toast.LENGTH_LONG).show()
-            } catch (e: FirebaseAuthInvalidCredentialsException) {
+            } catch (_: FirebaseAuthInvalidCredentialsException) {
                 Toast.makeText(context, "Invalid email or password", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(context, "Login Failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -111,9 +110,5 @@ class LoginViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
-    }
-
-    fun resetLoginState() {
-        _uiState.value = _uiState.value.copy(isLoggedIn = false)
     }
 }

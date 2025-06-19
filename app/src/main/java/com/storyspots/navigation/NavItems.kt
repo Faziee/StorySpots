@@ -1,5 +1,6 @@
+package com.storyspots.navigation
+
 import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import com.storyspots.R
 
 sealed class NavItem(

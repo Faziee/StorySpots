@@ -9,12 +9,11 @@ import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
-import com.google.gson.JsonObject
 import com.google.gson.JsonElement
 
 // Extension function to get properties from QueriedRenderedFeature
 fun com.mapbox.maps.QueriedRenderedFeature.getProperty(propertyName: String): JsonElement? {
-    return this.queriedFeature.feature?.properties()?.get(propertyName)
+    return this.queriedFeature.feature.properties()?.get(propertyName)
 }
 
 class ClusterZoomHandler {
@@ -25,7 +24,6 @@ class ClusterZoomHandler {
 
         fun setupClusterClickHandler(
             mapView: MapView,
-            sourceId: String,
             onSmallClusterClick: ((Point, Int) -> Unit)? = null
         ) {
             Log.d(TAG, "Setting up cluster-specific click handler")

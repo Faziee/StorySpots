@@ -1,6 +1,5 @@
 package com.storyspots.core.managers
 
-import android.graphics.BitmapFactory
 import android.util.Log
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
@@ -16,8 +15,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.storyspots.R
-import androidx.core.graphics.createBitmap
 
 object MapStateManager {
     private const val TAG = "MapStateManager"
@@ -25,20 +22,9 @@ object MapStateManager {
     private val _currentStories = MutableStateFlow<List<StoryData>>(emptyList())
     val currentStories: StateFlow<List<StoryData>> = _currentStories.asStateFlow()
 
-    private val _pinsVisible = MutableStateFlow(false)
-    val pinsVisible: StateFlow<Boolean> = _pinsVisible.asStateFlow()
-
-    private var lastMapViewId: Int? = null
-
     fun updateStories(stories: List<StoryData>) {
         Log.d(TAG, "Updating stories: ${stories.size} stories")
         _currentStories.value = stories
-    }
-
-    fun hidePins() {
-        Log.d(TAG, "Hiding pins")
-        SimpleClustering.clearPins()
-        _pinsVisible.value = false
     }
 
     fun showPinsOnMap(mapInstanceId: Int) {
@@ -82,61 +68,32 @@ object MapStateManager {
         }
     }
 
-    fun initializeMapForNewInstance(mapView: MapView) {
-        Log.d(TAG, "Initializing map for new instance")
-
-        try {
-            val context = mapView.context
-            val resourceId = context.resources.getIdentifier("pin_marker", "drawable", context.packageName)
-            if (resourceId == 0) {
-                Log.e(TAG, "pin_marker drawable not found! Using fallback.")
-                val fallbackBitmap = createBitmap(32, 32)
-                fallbackBitmap.eraseColor(android.graphics.Color.RED)
-                initializeClusteringWithBitmap(mapView, fallbackBitmap)
-                return
-            }
-
-            val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
-            if (bitmap == null) {
-                Log.e(TAG, "Failed to decode pin_marker bitmap")
-                return
-            }
-
-            initializeClusteringWithBitmap(mapView, bitmap)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing map for new instance", e)
-        }
-    }
-
     private fun initializeClusteringWithBitmap(mapView: MapView, bitmap: android.graphics.Bitmap) {
         val annotationApi = mapView.annotations
         val pointAnnotationManager = annotationApi.createPointAnnotationManager()
 
         SimpleClustering.setupClustering(mapView, pointAnnotationManager, bitmap)
-        ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins")
+        ClusterZoomHandler.setupClusterClickHandler(mapView)
 
-        ClusterZoomHandler.setupClusterClickHandler(mapView, "clustering-pins") { point, pointCount ->
+        ClusterZoomHandler.setupClusterClickHandler(mapView) { point, pointCount ->
             Log.d(TAG, "Small cluster clicked at $point with $pointCount stories")
 
-            // Get stories near this cluster point using the same logic you already have
             val storiesAtLocation = currentStories.value.filter { story ->
                 story.location?.let { geoPoint ->
                     val distance = calculateDistance(point, geoPoint)
                     distance < 0.001
-                } ?: false
+                } == true
             }
 
             Log.d(TAG, "Cluster clicked: found ${storiesAtLocation.size} stories at location")
         }
-
 
         Log.d(TAG, "Map initialization completed for new instance")
     }
 
     fun getStoriesCount(): Int = _currentStories.value.size
 
-    private fun calculateDistance(point: com.mapbox.geojson.Point, geoPoint: com.google.firebase.firestore.GeoPoint): Double {
+    private fun calculateDistance(point: Point, geoPoint: com.google.firebase.firestore.GeoPoint): Double {
         val latDiff = point.latitude() - geoPoint.latitude
         val lngDiff = point.longitude() - geoPoint.longitude
         return kotlin.math.sqrt(latDiff * latDiff + lngDiff * lngDiff)

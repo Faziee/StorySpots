@@ -1,6 +1,10 @@
 package com.storyspots.register
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -34,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.storyspots.R
 import com.storyspots.ui.theme.*
@@ -54,201 +59,223 @@ fun RegisterScreen(
         viewModel.initializeCloudinaryService(context)
     }
 
-    // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         viewModel.updateSelectedImage(uri)
     }
 
-    Column(
+    val mediaPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            imagePickerLauncher.launch("image/*")
+        } else {
+            Toast.makeText(context, "Permission denied. Cannot access gallery.", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+    val handleImageSelection = {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+
+        when (PackageManager.PERMISSION_GRANTED) {
+            ContextCompat.checkSelfPermission(context, permission) -> {
+                imagePickerLauncher.launch("image/*")
+            }
+
+            else -> {
+                mediaPermissionLauncher.launch(permission)
+            }
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(White)
+            .imePadding()
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Logo
-        Image(
-            painter = painterResource(id = R.drawable.logo_ss),
-            contentDescription = "Logo",
-            modifier = Modifier.size(200.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Title
-        Text(
-            text = "Register",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = DarkText
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Subtitle
-        Text(
-            text = "Create your account to get started",
-            fontSize = 16.sp,
-            color = MediumText,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Profile Picture Selection
-
-        ProfilePictureSelector(
-            selectedImageUri = uiState.selectedImageUri,
-            uploadedImageUrl = uploadedImageUrl,
-            isUploadingImage = uiState.isUploadingImage,
-            onImageSelect = { imagePickerLauncher.launch("image/*") }
-        )
-
-        // Upload status text
-        if (uiState.isUploadingImage) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Uploading image...",
-                color = Authentication,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        } else if (uploadedImageUrl != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Image uploaded successfully!",
-                color = SuccessColour,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Username Field
-        OutlinedTextField(
-            value = uiState.username,
-            onValueChange = viewModel::updateUsername,
-            label = { Text("Username") },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Authentication,
-                unfocusedBorderColor = HintGray,
-                focusedLabelColor = Authentication,
-                cursorColor = Authentication
-            )
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Email Field
-        OutlinedTextField(
-            value = uiState.email,
-            onValueChange = viewModel::updateEmail,
-            label = { Text("Email") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Authentication,
-                unfocusedBorderColor = HintGray,
-                focusedLabelColor = Authentication,
-                cursorColor = Authentication
-            )
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Password Field
-        OutlinedTextField(
-            value = uiState.password,
-            onValueChange = viewModel::updatePassword,
-            label = { Text("Password") },
-            visualTransformation = if (uiState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = {
-                IconButton(onClick = viewModel::togglePasswordVisibility) {
-                    Icon(
-                        imageVector = if (uiState.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (uiState.passwordVisible) "Hide password" else "Show password"
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Authentication,
-                unfocusedBorderColor = HintGray,
-                focusedLabelColor = Authentication,
-                cursorColor = Authentication
-            )
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Password Hints
-        if (uiState.showPasswordHints) {
-            PasswordHints(passwordValidation = passwordValidation)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Register Button
-        Button(
-            onClick = {
-                viewModel.registerUser(context, onRegisterSuccess)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .padding(horizontal = 32.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Authentication),
-            enabled = !uiState.isLoading && !uiState.isUploadingImage
+                .fillMaxSize()
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            } else {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_ss),
+                contentDescription = "Logo",
+                modifier = Modifier.size(200.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Register",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Create your account to get started",
+                fontSize = 16.sp,
+                color = MediumText,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            ProfilePictureSelector(
+                selectedImageUri = uiState.selectedImageUri,
+                uploadedImageUrl = uploadedImageUrl,
+                isUploadingImage = uiState.isUploadingImage,
+                onImageSelect = handleImageSelection
+            )
+
+            if (uiState.isUploadingImage) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = when {
-                        uiState.isLoading -> "Creating Account..."
-                        uiState.isUploadingImage -> "Uploading Image..."
-                        else -> "Register"
-                    },
-                    fontSize = 16.sp,
+                    text = "Uploading image...",
+                    color = Authentication,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            } else if (uploadedImageUrl != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Image uploaded successfully!",
+                    color = SuccessColour,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = uiState.username,
+                onValueChange = viewModel::updateUsername,
+                label = { Text("Username") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Authentication,
+                    unfocusedBorderColor = HintGray,
+                    focusedLabelColor = Authentication,
+                    cursorColor = Authentication
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = uiState.email,
+                onValueChange = viewModel::updateEmail,
+                label = { Text("Email") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Authentication,
+                    unfocusedBorderColor = HintGray,
+                    focusedLabelColor = Authentication,
+                    cursorColor = Authentication
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = uiState.password,
+                onValueChange = viewModel::updatePassword,
+                label = { Text("Password") },
+                visualTransformation = if (uiState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = viewModel::togglePasswordVisibility) {
+                        Icon(
+                            imageVector = if (uiState.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (uiState.passwordVisible) "Hide password" else "Show password"
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Authentication,
+                    unfocusedBorderColor = HintGray,
+                    focusedLabelColor = Authentication,
+                    cursorColor = Authentication
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (uiState.showPasswordHints) {
+                PasswordHints(passwordValidation = passwordValidation)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    viewModel.registerUser(context, onRegisterSuccess)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .padding(horizontal = 32.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Authentication),
+                enabled = !uiState.isLoading && !uiState.isUploadingImage
+            ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = when {
+                            uiState.isUploadingImage -> "Uploading Image..."
+                            else -> "Register"
+                        },
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "Already have an account? Login here",
+                color = Color.Black,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .clickable { onNavigateToLogin() }
+                    .padding(24.dp)
+            )
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Login Redirect
-        Text(
-            text = "Already have an account? Login here",
-            color = Color.Black,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .clickable { onNavigateToLogin() }
-                .padding(24.dp)
-        )
     }
 }
 
@@ -269,7 +296,6 @@ fun ProfilePictureSelector(
     ) {
         when {
             isUploadingImage -> {
-                // Show upload progress
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -284,7 +310,6 @@ fun ProfilePictureSelector(
                 }
             }
             uploadedImageUrl != null -> {
-                // Show uploaded image from Cloudinary
                 AsyncImage(
                     model = uploadedImageUrl,
                     contentDescription = "Profile Picture",
@@ -293,7 +318,6 @@ fun ProfilePictureSelector(
                 )
             }
             selectedImageUri != null -> {
-                // Show selected image (while uploading)
                 AsyncImage(
                     model = selectedImageUri,
                     contentDescription = "Profile Picture",
@@ -302,7 +326,6 @@ fun ProfilePictureSelector(
                 )
             }
             else -> {
-                // Default profile picture placeholder
                 Box(
                     modifier = Modifier
                         .size(120.dp),

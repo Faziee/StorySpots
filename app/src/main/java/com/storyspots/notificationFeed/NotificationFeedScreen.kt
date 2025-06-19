@@ -1,38 +1,55 @@
-
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.storyspots.model.NotificationItem
-import com.storyspots.ui.theme.Background
-import com.storyspots.ui.theme.DarkText
-import com.storyspots.ui.theme.LightPink
-import com.storyspots.ui.theme.White
-import com.storyspots.notificationFeed.NotificationSection
-import com.storyspots.notificationFeed.NotificationsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.firestore.DocumentReference
 import com.storyspots.caption.FullscreenStoryOverlay
 import com.storyspots.caption.StoryData
-import com.storyspots.caption.UserData
 import com.storyspots.model.NotificationWithUser
+import com.storyspots.notificationFeed.NotificationSection
+import com.storyspots.notificationFeed.NotificationsViewModel
+import com.storyspots.ui.theme.Background
+import com.storyspots.ui.theme.DarkText
+import com.storyspots.ui.theme.LightPink
 import com.storyspots.ui.theme.Pink80
+import com.storyspots.ui.theme.White
 import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,13 +65,11 @@ fun NotificationFeedScreen(
 
     val context = LocalContext.current
 
-    // Move these states to top-level scope so they persist properly
     var selectedStoryRef by remember { mutableStateOf<DocumentReference?>(null) }
     var selectedStory by remember { mutableStateOf<StoryData?>(null) }
     var isStoryLoading by remember { mutableStateOf(false) }
     var selectedNotification by remember { mutableStateOf<NotificationWithUser?>(null) }
 
-    // LAUNCH SIDE EFFECT WHEN STORY IS SELECTED
     LaunchedEffect(selectedStoryRef) {
         selectedStoryRef?.let { ref ->
             isStoryLoading = true
@@ -84,7 +99,6 @@ fun NotificationFeedScreen(
         }
     }
 
-    // Main UI
     Scaffold(
         topBar = {
             Surface(
@@ -147,7 +161,6 @@ fun NotificationFeedScreen(
                             .padding(16.dp)
                     ) {
                         Column {
-                            // This lambda is now safe: just updates state
                             val onViewClick: (NotificationWithUser) -> Unit = { item ->
                                 selectedStoryRef = item.notification.story
                                 selectedNotification = item
@@ -217,7 +230,6 @@ fun NotificationFeedScreen(
                 }
             }
 
-            // Show loading spinner while loading a story
             if (isStoryLoading) {
                 Box(
                     modifier = Modifier
@@ -229,7 +241,6 @@ fun NotificationFeedScreen(
                 }
             }
 
-            // Show fullscreen story overlay when a story is selected
             selectedStory?.let { story ->
                 FullscreenStoryOverlay(
                     stories = listOf(story),
