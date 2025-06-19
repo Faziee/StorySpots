@@ -24,11 +24,9 @@ class LocationsManager(private val context: Context) {
     private var locationUpdateListener: OnIndicatorPositionChangedListener? = null
     private var moveListener: OnMoveListener? = null
 
-    // Expose current location as StateFlow
     private val _currentLocation = MutableStateFlow<Point?>(null)
     val currentLocation: StateFlow<Point?> = _currentLocation.asStateFlow()
 
-    private var hasCenteredOnFirstLocation = false
     private val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
     private var isFollowingUser = true
 
@@ -38,14 +36,6 @@ class LocationsManager(private val context: Context) {
 
     fun isFollowingUser(): Boolean = isFollowingUser
 
-    fun enableFollowMode(mapView: MapView? = null) {
-        isFollowingUser = true
-        mapView?.let {
-            _currentLocation.value?.let { point ->
-                centerOnLocation(it, point)
-            }
-        }
-    }
 
     fun disableFollowMode() {
         isFollowingUser = false
@@ -94,12 +84,10 @@ class LocationsManager(private val context: Context) {
             override fun onMoveEnd(detector: MoveGestureDetector) {}
         }.also { mapView.gestures.addOnMoveListener(it) }
 
-        // Remove previous location listener if exists
         locationUpdateListener?.let {
             mapView.location.removeOnIndicatorPositionChangedListener(it)
         }
 
-        // Add new location listener
         locationUpdateListener = OnIndicatorPositionChangedListener { point ->
             if (isValidLocation(point)) {
                 _currentLocation.value = point
@@ -145,21 +133,101 @@ class LocationsManager(private val context: Context) {
     }
 
     fun recenterOnUserLocation(mapView: MapView?, zoom: Double = 15.0): Boolean {
+        Log.d("LocationsManager", "Current location: ${_currentLocation.value}")
+        Log.d("LocationsManager", "MapView is null: ${mapView == null}")
+
+        if (mapView == null) {
+            Log.e("LocationsManager", "MapView is null, cannot recenter")
+            return false
+        }
+
         return _currentLocation.value?.let { point ->
-            enableFollowMode(mapView)
+            Log.d("LocationsManager", "Recentering to: lat=${point.latitude()}, lng=${point.longitude()}")
+
+            val wasFollowing = isFollowingUser
+            isFollowingUser = false
+            Log.d("LocationsManager", "Disabled follow mode to prevent animation conflicts")
+
+            try {
+                mapView.location.enabled = false
+                Log.d("LocationsManager", "Temporarily disabled location component")
+            } catch (e: Exception) {
+                Log.w("LocationsManager", "Could not disable location component: ${e.message}")
+            }
+
+            Log.d("LocationsManager", "Calling centerOnLocation...")
             centerOnLocation(mapView, point, zoom)
+            Log.d("LocationsManager", "centerOnLocation completed")
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                try {
+                    mapView.location.enabled = true
+                    Log.d("LocationsManager", "Re-enabled location component")
+
+                    isFollowingUser = wasFollowing
+                    Log.d("LocationsManager", "Re-enabled follow mode: $wasFollowing")
+
+                    val currentCenter = mapView.getMapboxMap().cameraState.center
+                    Log.d("LocationsManager", "Final camera center: lat=${currentCenter.latitude()}, lng=${currentCenter.longitude()}")
+                    Log.d("LocationsManager", "Distance from target: ${distanceBetween(point, currentCenter)} meters")
+                } catch (e: Exception) {
+                    Log.e("LocationsManager", "Error re-enabling location features", e)
+                }
+            }, 1200)
+
             true
-        } ?: false
+        } ?: run {
+            Log.w("LocationsManager", "Cannot recenter - current location is null")
+            false
+        }
     }
 
-    fun centerOnLocation(mapView: MapView?, point: Point, zoom: Double = 15.0) {
-        mapView!!.camera.easeTo(
-            CameraOptions.Builder()
+    private fun centerOnLocation(mapView: MapView?, point: Point, zoom: Double) {
+        Log.d("LocationsManager", "centerOnLocation called with zoom: $zoom")
+
+        if (mapView == null) {
+            Log.e("LocationsManager", "MapView is null in centerOnLocation")
+            return
+        }
+
+        try {
+            val currentCamera = mapView.getMapboxMap().cameraState
+            Log.d("LocationsManager", "Current camera before: lat=${currentCamera.center.latitude()}, lng=${currentCamera.center.longitude()}, zoom=${currentCamera.zoom}")
+
+            val cameraOptions = CameraOptions.Builder()
                 .center(point)
                 .zoom(zoom)
-                .build(),
-            MapAnimationOptions.mapAnimationOptions { duration(1000) }
+                .build()
+
+            Log.d("LocationsManager", "Flying to: lat=${point.latitude()}, lng=${point.longitude()}, zoom=$zoom")
+
+            mapView.camera.flyTo(
+                cameraOptions,
+                MapAnimationOptions.Builder()
+                    .duration(1000)
+                    .build()
+            )
+
+            Log.d("LocationsManager", "Camera flyTo animation started")
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val newCamera = mapView.getMapboxMap().cameraState
+                Log.d("LocationsManager", "Camera during animation: lat=${newCamera.center.latitude()}, lng=${newCamera.center.longitude()}")
+            }, 500)
+
+        } catch (e: Exception) {
+            Log.e("LocationsManager", "Error in centerOnLocation", e)
+        }
+    }
+
+    private fun distanceBetween(point1: Point, point2: Point): Double {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(
+            point1.latitude(), point1.longitude(),
+            point2.latitude(), point2.longitude(),
+            results
         )
+        return results[0].toDouble()
     }
 
     fun cleanup(mapView: MapView) {
