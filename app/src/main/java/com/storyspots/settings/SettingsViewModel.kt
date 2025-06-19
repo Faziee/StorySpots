@@ -1,6 +1,8 @@
 package com.storyspots.settings
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -10,12 +12,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mapbox.maps.MapView
+import com.storyspots.caption.MapLoader
 import com.storyspots.services.cloudinary.CloudinaryService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import com.storyspots.core.AppComponents
+import com.storyspots.login.LoginActivity
 
 data class UserData(
     val username: String = "",
@@ -275,16 +281,22 @@ class SettingsViewModel(
         cloudinaryService?.uploadImageToCloudinary(uri)
     }
 
-    fun logout(context: Context): SettingsResult {
-        return try {
+    fun logout(context: Context, mainActivity: Activity) {
+        try {
             auth.signOut()
+            AppComponents.mapManager.cleanup()
             Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-            SettingsResult.Success
+
+            val intent = Intent(context, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            context.startActivity(intent)
+
+            mainActivity.finish()
+
         } catch (e: Exception) {
             Log.e("SettingsViewModel", "Error logging out", e)
-            val errorMessage = "Failed to logout: ${e.message}"
-            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
-            SettingsResult.Error(errorMessage)
+            Toast.makeText(context, "Failed to logout: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+
 }

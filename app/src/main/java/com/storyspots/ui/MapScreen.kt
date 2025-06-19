@@ -78,6 +78,8 @@ fun MapScreen() {
             Log.d("MapScreen", "MapScreen disposed")
             mapView?.let { view ->
                 AppComponents.locationManager.cleanup(view)
+                AppComponents.mapManager.cleanup()
+                MapLoader.cleanup()
             }
         }
     }
@@ -90,7 +92,7 @@ fun MapScreen() {
                 val mapInitOptions = MapInitOptions(context = ctx)
                 MapView(ctx, mapInitOptions).also { map ->
                     mapView = map
-                    map.getMapboxMap().loadStyleUri("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") { style ->
+                    map.mapboxMap.loadStyle("mapbox://styles/jordana-gc/cmad3b95m00oo01sdbs0r2rag") { style ->
                         AppComponents.appScope.launch {
                             if (!map.isDestroyed) {
                                 Log.d("MapScreen", "Style loaded, initializing map")

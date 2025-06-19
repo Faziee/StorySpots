@@ -56,7 +56,6 @@ class RegisterViewModel : ViewModel() {
     fun initializeCloudinaryService(context: Context) {
         cloudinaryService = CloudinaryService(context)
 
-        // Observe upload state changes
         viewModelScope.launch {
             cloudinaryService?.uploadState?.collectLatest { uploadState ->
                 when (uploadState) {
@@ -70,7 +69,6 @@ class RegisterViewModel : ViewModel() {
                     }
                     is CloudinaryService.UploadState.Error -> {
                         _uiState.value = _uiState.value.copy(isUploadingImage = false)
-                        // Handle error - you might want to show a toast or update UI state
                     }
                     is CloudinaryService.UploadState.Idle -> {
                         _uiState.value = _uiState.value.copy(isUploadingImage = false)
@@ -119,7 +117,7 @@ class RegisterViewModel : ViewModel() {
     private fun validatePassword(password: String) {
         val lengthValid = password.length >= 6
         val uppercaseValid = password.any { it.isUpperCase() }
-        val specialCharValid = password.any { "!@#\$%^&*()_+=<>?/".contains(it) }
+        val specialCharValid = password.any { "!@#$%^&*()_+=<>?/".contains(it) }
 
         _passwordValidation.value = PasswordValidation(
             lengthValid = lengthValid,
@@ -145,7 +143,6 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
-        // Check if image is still uploading
         if (currentState.isUploadingImage) {
             Toast.makeText(context, "Please wait for image upload to complete", Toast.LENGTH_SHORT).show()
             return
@@ -162,18 +159,16 @@ class RegisterViewModel : ViewModel() {
 
                 val user = authResult.user
                 if (user != null) {
-                    // Use the uploaded Cloudinary URL or null for default
                     val profileImageUrl = _uploadedImageUrl.value
 
                     updateUserProfile(user.uid, currentState.username, profileImageUrl)
 
                     OneSignalManager.registerUser(userId = user.uid)
-                    OneSignalManager.logCurrentStatus()
 
                     Toast.makeText(context, "Registration Successful", Toast.LENGTH_SHORT).show()
                     onSuccess()
                 }
-            } catch (e: FirebaseAuthUserCollisionException) {
+            } catch (_: FirebaseAuthUserCollisionException) {
                 Toast.makeText(context, "Email already in use", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(context, "Registration Failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -183,14 +178,9 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
-    private fun getDefaultProfileImageUrl(): String? {
-        return null
-    }
-
     private suspend fun updateUserProfile(userId: String, username: String, profileImageUrl: String?) {
         val user = auth.currentUser ?: return
 
-        // Update Firebase Auth profile
         val profileUpdates = userProfileChangeRequest {
             displayName = username
             profileImageUrl?.let { photoUri = it.toUri() }
@@ -198,7 +188,6 @@ class RegisterViewModel : ViewModel() {
 
         user.updateProfile(profileUpdates).await()
 
-        // Save user data to Firestore
         val userData = hashMapOf(
             "username" to username,
             "email" to user.email,
