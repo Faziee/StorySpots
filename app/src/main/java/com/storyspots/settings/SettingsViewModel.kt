@@ -1,6 +1,5 @@
 package com.storyspots.settings
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -279,7 +278,7 @@ class SettingsViewModel(
         cloudinaryService?.uploadImageToCloudinary(uri)
     }
 
-    fun logout(context: Context, mainActivity: Activity) {
+    fun logout(context: Context) {
         try {
             auth.signOut()
             AppComponents.mapManager.cleanup()
@@ -288,9 +287,6 @@ class SettingsViewModel(
             val intent = Intent(context, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             context.startActivity(intent)
-
-            mainActivity.finish()
-
         } catch (e: Exception) {
             Log.e("SettingsViewModel", "Error logging out", e)
             Toast.makeText(context, "Failed to logout: ${e.message}", Toast.LENGTH_LONG).show()
