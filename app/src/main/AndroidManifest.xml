@@ -10,6 +10,7 @@
     <!-- ALL PERMISSIONS GO HERE (outside <application>) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -72,6 +73,11 @@
 <!--                <action android:name="com.google.firebase.MESSAGING_EVENT" />-->
 <!--            </intent-filter>-->
 <!--        </service>-->
+
+        <!-- Register the GeofenceReceiver -->
+        <receiver android:name=".receiver.GeofenceReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
     </application>
 
