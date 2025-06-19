@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.storyspots.caption.StoryData
 import com.storyspots.core.AppComponents
+import com.storyspots.notification.NotificationCleanupService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,8 @@ class YourFeedViewModel(
 
     private val _deleteState = MutableStateFlow<DeleteState>(DeleteState.Idle)
     val deleteState: StateFlow<DeleteState> = _deleteState.asStateFlow()
+
+    private val notificationCleanupService = NotificationCleanupService()
 
     companion object {
         private const val TAG = "YourFeedViewModel"
@@ -63,9 +66,6 @@ class YourFeedViewModel(
         }
     }
 
-    /**
-     * @param story The story to delete
-     */
     fun deleteStory(story: StoryData) {
         if (story.id.isNullOrEmpty()) {
             _deleteState.value = DeleteState.Error("Invalid story ID")
@@ -79,6 +79,14 @@ class YourFeedViewModel(
 
             if (result.isSuccess) {
                 Log.d(TAG, "Story deleted successfully: ${story.id}")
+
+                try {
+                    notificationCleanupService.deleteNotificationsForStory(story.id)
+                    Log.d(TAG, "Notifications cleaned up for story: ${story.id}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to cleanup notifications for story: ${story.id}", e)
+                }
+
                 _deleteState.value = DeleteState.Success
                 refreshMapPins()
 
