@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.mapbox.geojson.Point
-import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.storyspots.caption.model.StoryData
 import com.storyspots.caption.StoryUtils

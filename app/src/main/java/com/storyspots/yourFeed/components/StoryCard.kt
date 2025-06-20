@@ -61,38 +61,44 @@ fun StoryCard(
                     )
                 }
 
-                // Image
-                story.imageUrl?.let { imageUrl ->
-                    Log.d("StoryCard", "Loading image from URL: $imageUrl")
+                if (story.imageUrl != "") {
+                    story.imageUrl.let { imageUrl ->
+                        Log.d("StoryCard", "Loading image from URL: $imageUrl")
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(imageUrl)
-                            .crossfade(true)
-                            .listener(
-                                onStart = {
-                                    Log.d("StoryCard", "Started loading image: $imageUrl")
-                                },
-                                onSuccess = { _, _ ->
-                                    Log.d("StoryCard", "Successfully loaded image: $imageUrl")
-                                },
-                                onError = { _, throwable ->
-                                    Log.e("StoryCard", "Failed to load image: $imageUrl", throwable.throwable)
-                                }
-                            )
-                            .build(),
-                        contentDescription = "Story image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(R.drawable.placeholder_image),
-                        error = painterResource(R.drawable.placeholder_image)
-                    )
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(imageUrl)
+                                .crossfade(true)
+                                .listener(
+                                    onStart = {
+                                        Log.d("StoryCard", "Started loading image: $imageUrl")
+                                    },
+                                    onSuccess = { _, _ ->
+                                        Log.d("StoryCard", "Successfully loaded image: $imageUrl")
+                                    },
+                                    onError = { _, throwable ->
+                                        Log.e(
+                                            "StoryCard",
+                                            "Failed to load image: $imageUrl",
+                                            throwable.throwable
+                                        )
+                                    }
+                                )
+                                .build(),
+                            contentDescription = "Story image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(R.drawable.placeholder_image),
+                            error = painterResource(R.drawable.placeholder_image)
+                        )
+                    }
                 }
+                else { /* Do nothing */}
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -115,6 +121,8 @@ fun StoryCard(
                     )
                 }
             }
+
+            Spacer (modifier = Modifier.fillMaxWidth())
 
             // Delete button
             Box(
