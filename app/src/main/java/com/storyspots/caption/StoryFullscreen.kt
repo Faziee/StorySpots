@@ -49,7 +49,7 @@ data class UserData(
 suspend fun fetchUserData(userRef: DocumentReference): UserData? {
     return try {
         val userDoc = FirebaseFirestore.getInstance()
-            .collection("user")
+            .collection("users")
             .document(userRef.id)
             .get()
             .await()
