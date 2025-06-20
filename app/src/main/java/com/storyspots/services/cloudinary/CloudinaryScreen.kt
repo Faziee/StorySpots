@@ -16,30 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.storyspots.ui.DisplayProgressBar
 
-//========================================== HOW TO USE==============================================//
-/*                                        you're welcome ;)
-
-@Composable
-fun YourFunction() {
-    var photoUrl: String? by remember { mutableStateOf(null) }
-
-    CloudinaryScreen(
-        onImageUploaded = { url ->
-            photoUrl = url  // You get the image URL here.
-        }
-    )
-
-    // Now photoUrl has the value and you can store it in the database as part of the post document.
-    photoUrl?.let { url ->
-        // Pass to any other class/function
-        SomeOtherClass.doSomethingWithUrl(url)
-    }
-}
-
-*/
-//===================================================================================================//
-
-
 @Composable
 fun CloudinaryScreen(
     triggerImagePicker: Boolean = false,

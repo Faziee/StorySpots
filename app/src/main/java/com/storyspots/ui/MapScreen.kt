@@ -15,8 +15,7 @@ import com.mapbox.maps.Style
 import androidx.compose.ui.geometry.Offset
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.storyspots.caption.DismissibleStoryStack
-import com.storyspots.caption.MapLoader
+import com.storyspots.caption.StoryStack
 import com.storyspots.caption.StoryData
 import com.storyspots.caption.toStoryData
 import com.storyspots.core.AppComponents
@@ -79,7 +78,6 @@ fun MapScreen() {
             mapView?.let { view ->
                 AppComponents.locationManager.cleanup(view)
                 AppComponents.mapManager.cleanup()
-                MapLoader.cleanup()
             }
         }
     }
@@ -124,7 +122,7 @@ fun MapScreen() {
 
         // Story stack overlay
         if (showStoryStack && selectedStories.isNotEmpty()) {
-            DismissibleStoryStack(
+            StoryStack(
                 stories = selectedStories,
                 offset = storyStackOffset,
                 onDismiss = {
@@ -175,9 +173,6 @@ private suspend fun initializeMapAsync(
 
             // Initialize the map manager for this new instance
             AppComponents.mapManager.initializeMap(mapView)
-
-            // Initialize MapLoader
-            MapLoader.initialize(mapView)
 
             Log.d("MapScreen", "About to initialize clustering")
 

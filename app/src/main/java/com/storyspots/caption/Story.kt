@@ -42,30 +42,3 @@ fun DocumentSnapshot.toStoryData(): StoryData? {
         null
     }
 }
-
-fun fetchAllStories(limit: Long = 50, onResult: (List<StoryData>) -> Unit): ListenerRegistration {
-    val db = FirebaseFirestore.getInstance()
-    Log.d("Story", "Starting to fetch stories from Firestore...")
-
-    return db.collection("story")
-        .orderBy("created_at", Query.Direction.DESCENDING)
-        .limit(limit)
-        .addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.e("StoryBox", "Real-time fetch failed", e)
-                onResult(emptyList())
-                return@addSnapshotListener
-            }
-
-            Log.d("Story", "Firestore returned ${snapshot?.size()} documents")
-            val stories = snapshot?.documents?.mapNotNull { doc ->
-                Log.d("Story", "Processing document: ${doc.id}")
-                doc.toStoryData()?.also {
-                    Log.d("Story", "Successfully converted: ${it.title} at ${it.location}")
-                }
-            } ?: emptyList()
-
-            Log.d("Story", "Final stories list: ${stories.size} stories")
-            onResult(stories)
-        }
-}

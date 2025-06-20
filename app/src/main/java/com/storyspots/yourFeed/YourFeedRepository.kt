@@ -18,9 +18,6 @@ class YourFeedRepository {
         private const val TAG = "YourFeedRepository"
     }
 
-    /**
-     * Get current user's stories as a Flow that updates in real-time
-     */
     fun getUserStoriesFlow(): Flow<List<StoryData>> = callbackFlow {
         val currentUser = auth.currentUser
         if (currentUser == null) {

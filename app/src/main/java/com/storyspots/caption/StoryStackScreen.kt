@@ -1,4 +1,4 @@
-// file: ui/components/DismissibleStoryStack.kt
+// file: ui/components/StoryStackScreen.kt
 package com.storyspots.caption
 
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
 @Composable
-fun DismissibleStoryStack(
+fun StoryStack(
     stories: List<StoryData>,
     offset: Offset,
     onDismiss: () -> Unit
@@ -51,7 +51,6 @@ fun DismissibleStoryStack(
     }
 }
 
-// And update StoryStackForPin to accept onPositioned
 @Composable
 fun StoryStackForPin(
     stories: List<StoryData>,
@@ -62,7 +61,6 @@ fun StoryStackForPin(
     var currentIndex by remember { mutableStateOf(0) }
     var showFullscreenOverlay by remember { mutableStateOf(false) }
 
-    // Reset index when stories change
     LaunchedEffect(stories) {
         currentIndex = 0
     }
@@ -107,7 +105,7 @@ fun StoryStackForPin(
             visibleStories.forEachIndexed { index, stackedStory ->
                 val stackIndex = visibleStories.size - 1 - index
 
-                StoryCard(
+                MapStoryCard(
                     story = stackedStory,
                     modifier = Modifier
                         .zIndex(stackIndex.toFloat())

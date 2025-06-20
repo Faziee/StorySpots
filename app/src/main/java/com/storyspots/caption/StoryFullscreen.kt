@@ -1,5 +1,6 @@
 package com.storyspots.caption
 
+import android.util.Log
 import com.storyspots.ui.theme.DarkText
 import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.White
@@ -31,12 +32,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
 import com.storyspots.R
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 // User data class
 data class UserData(
@@ -53,10 +56,11 @@ suspend fun fetchUserData(userRef: DocumentReference): UserData? {
             .document(userRef.id)
             .get()
             .await()
+        Log.d("UserData", "Fetched user data: $userDoc")
 
         UserData(
             id = userDoc.id,
-            username = userDoc.getString("username") ?: "Unknown User",
+            username = userDoc.getString("username") ?: "Deleted User",
             profileImageUrl = userDoc.getString("profile_picture_url")
                 ?: userDoc.getString("profileImageUrl")
                 ?: userDoc.getString("profile_picture")
@@ -68,20 +72,26 @@ suspend fun fetchUserData(userRef: DocumentReference): UserData? {
     }
 }
 
-// Function to format relative time (like "3 hours ago")
 fun formatRelativeTime(timestamp: com.google.firebase.Timestamp): String {
-    val now = System.currentTimeMillis()
-    val time = timestamp.toDate().time
-    val diff = now - time
+    val now = Date()
+    val date = timestamp.toDate()
+    val diffInMillis = now.time - date.time
+
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(diffInMillis)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis)
+    val hours = TimeUnit.MILLISECONDS.toHours(diffInMillis)
+    val days = TimeUnit.MILLISECONDS.toDays(diffInMillis)
 
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000}m ago"
-        diff < 86400_000 -> "${diff / 3600_000}h ago"
-        diff < 604800_000 -> "${diff / 86400_000}d ago"
+        seconds < 60 -> "Just now"
+        minutes < 60 -> "$minutes minute${if (minutes != 1L) "s" else ""} ago"
+        hours < 24 -> "$hours hour${if (hours != 1L) "s" else ""} ago"
+        days == 1L -> "Yesterday"
+        days in 2..6 -> "$days days ago"
+        days in 7..13 -> "Last week"
         else -> {
-            val sdf = SimpleDateFormat("MMM dd", Locale.getDefault())
-            sdf.format(timestamp.toDate())
+            val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+            sdf.format(date)
         }
     }
 }
@@ -156,7 +166,6 @@ fun FullscreenStoryCard(
     var userData by remember { mutableStateOf<UserData?>(null) }
     var isLoadingUser by remember { mutableStateOf(true) }
 
-    // Fetch user data when the card is composed
     LaunchedEffect(story.authorRef) {
         if (story.authorRef != null) {
             userData = fetchUserData(story.authorRef)
@@ -179,7 +188,6 @@ fun FullscreenStoryCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Profile picture
                 if (isLoadingUser) {
                     Box(
                         modifier = Modifier

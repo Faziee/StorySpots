@@ -1,7 +1,5 @@
 package com.storyspots.caption
 
-import com.storyspots.caption.StoryData
-import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Box
@@ -18,29 +16,17 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
-import com.storyspots.R
-import com.storyspots.caption.fetchAllStories
 import androidx.compose.foundation.background
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -48,7 +34,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun StoryCard(
+fun MapStoryCard(
     story: StoryData,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
@@ -94,16 +80,17 @@ fun StoryCard(
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column {
-                    story.imageUrl?.let {
+                    story.imageUrl?.let() //TODO: Make proper text story
+                    {
                         Image(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(100.dp)
                                 .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                             painter = rememberAsyncImagePainter(
-                                model = it,
-                                placeholder = painterResource(R.drawable.placeholder_image),
-                                error = painterResource(R.drawable.error_image)
+                                model = story.imageUrl,
+//                                placeholder = painterResource(R.drawable.placeholder_image),
+//                                error = painterResource(R.drawable.error_image)
                             ),
                             contentDescription = null,
                             contentScale = ContentScale.Crop
@@ -119,7 +106,7 @@ fun StoryCard(
                         )
                         story.createdAt?.let {
                             Text(
-                                text = formatFriendlyDate(story.createdAt.toDate()),
+                                text = formatRelativeTime(story.createdAt),
                                 color = Color(0xFFFF398F),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Light
@@ -136,104 +123,6 @@ fun StoryCard(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-fun formatFriendlyDate(date: Date): String {
-    val now = Date()
-    val diffInMillis = now.time - date.time
-
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(diffInMillis)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis)
-    val hours = TimeUnit.MILLISECONDS.toHours(diffInMillis)
-    val days = TimeUnit.MILLISECONDS.toDays(diffInMillis)
-
-    return when {
-        seconds < 60 -> "Just now"
-        minutes < 60 -> "$minutes minutes ago"
-        hours < 24 -> "$hours hours ago"
-        days == 1L -> "Yesterday"
-        days in 2..6 -> "$days days ago"
-        days in 7..13 -> "Last week"
-        else -> {
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            sdf.format(date)
-        }
-    }
-}
-
-//For now, this loads all the stories from the database. TODO: Load by geo-point
-@SuppressLint("UseOfNonLambdaOffsetOverload")
-@Composable
-fun StoryStack(
-    stories: List<StoryData>, // Filtered stories passed from MapLoader
-    screenOffset: Offset,
-    onDismiss: () -> Unit = {}
-) {
-    var currentIndex by remember { mutableStateOf(0) }
-    var showFullscreenOverlay by remember { mutableStateOf(false) }
-
-    // Reset index when stories change
-    LaunchedEffect(stories) {
-        currentIndex = 0
-    }
-
-    val storyBoxWidth = 180.dp
-    val storyBoxHeight = 200.dp
-
-    val density = LocalDensity.current
-    val offsetPx = with(density) {
-        val heightPx = storyBoxHeight.toPx()
-        Offset(
-            x = screenOffset.x,
-            y = screenOffset.y - heightPx
-        )
-    }
-
-    if (showFullscreenOverlay && stories.isNotEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(2f)
-        ) {
-            FullscreenStoryOverlay(
-                stories = stories,
-                onClose = { showFullscreenOverlay = false }
-            )
-        }
-        return
-    }
-
-    if (stories.isNotEmpty()) {
-        val visibleStories = stories.drop(currentIndex).take(3)
-        val remainingStoriesCount = stories.size - currentIndex
-
-        Box(
-            modifier = Modifier
-                .offset { IntOffset(offsetPx.x.toInt(), offsetPx.y.toInt()) }
-                .size(storyBoxWidth, storyBoxHeight)
-                .zIndex(1f)
-        ) {
-            visibleStories.forEachIndexed { index, stackedStory ->
-                val stackIndex = visibleStories.size - 1 - index
-
-                StoryCard(
-                    story = stackedStory,
-                    modifier = Modifier
-                        .zIndex(stackIndex.toFloat())
-                        .size(storyBoxWidth, storyBoxHeight)
-                        .offset(
-                            x = (stackIndex * 5).dp,
-                            y = -(stackIndex * 5).dp
-                        ),
-                    onClick = {
-                        currentIndex = (currentIndex + 1) % stories.size
-                    },
-                    onLongPress = { showFullscreenOverlay = true },
-                    stackCount = if (index == 0) remainingStoriesCount else null
-                )
             }
         }
     }

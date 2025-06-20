@@ -8,7 +8,6 @@ import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.gestures
 import com.storyspots.R
 import com.storyspots.core.StorySpot
-import com.storyspots.caption.MapLoader
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering
 import kotlinx.coroutines.Dispatchers
@@ -23,12 +22,6 @@ class MapManager {
 
         setupMapGestures()
         setupAnnotations()
-
-        MapLoader.initialize(mapView)
-
-        MapLoader.setOnPinClickListener { storiesAtPin, offset ->
-            // TODO: Handle pin clicks
-        }
     }
 
     private fun setupMapGestures() {
