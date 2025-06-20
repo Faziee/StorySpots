@@ -98,7 +98,7 @@ fun PostStoryScreen(
                 modifier = Modifier
                     .shadow(4.dp, RoundedCornerShape(8.dp), clip = true)
                     .background(White, shape = RoundedCornerShape(8.dp))
-                    .border(1.dp, Authentication, RoundedCornerShape(8.dp))
+                    .border(1.dp, AppPink, RoundedCornerShape(8.dp))
                     .fillMaxWidth()
                     .height(200.dp)
             ) {
@@ -138,10 +138,10 @@ fun PostStoryScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 ),
                 shape = RoundedCornerShape(8.dp),
                 singleLine = true,
@@ -162,10 +162,10 @@ fun PostStoryScreen(
                         postState !is PostStoryHandler.PostState.SavingToFirestore,
                 modifier = Modifier.fillMaxSize().heightIn(min = 120.dp, max = 200.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 )
             )
 
@@ -173,7 +173,7 @@ fun PostStoryScreen(
                 is PostStoryHandler.PostState.UploadingImage -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Uploading image...",
@@ -187,7 +187,7 @@ fun PostStoryScreen(
                     LinearProgressIndicator(
                         progress = progress,
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Uploading image: ${(progress * 100).toInt()}%",
@@ -199,7 +199,7 @@ fun PostStoryScreen(
                 is PostStoryHandler.PostState.SavingToFirestore -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Saving your story...",
@@ -237,7 +237,7 @@ fun PostStoryScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isPostEnabled) Authentication else LightGray,
+                    containerColor = if (isPostEnabled) AppPink else LightGray,
                     contentColor = if (isPostEnabled) White else LightGray
                 ),
                 enabled = isPostEnabled

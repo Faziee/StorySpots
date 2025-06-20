@@ -26,7 +26,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -103,7 +102,7 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(White)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -148,7 +147,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Uploading image...",
-                    color = Authentication,
+                    color = AppPink,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -173,10 +172,10 @@ fun RegisterScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 )
             )
 
@@ -192,10 +191,10 @@ fun RegisterScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 )
             )
 
@@ -220,10 +219,10 @@ fun RegisterScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 )
             )
 
@@ -244,12 +243,12 @@ fun RegisterScreen(
                     .height(50.dp)
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Authentication),
+                colors = ButtonDefaults.buttonColors(containerColor = AppPink),
                 enabled = !uiState.isLoading && !uiState.isUploadingImage
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = White,
                         modifier = Modifier.size(20.dp)
                     )
                 } else {
@@ -268,7 +267,7 @@ fun RegisterScreen(
 
             Text(
                 text = "Already have an account? Login here",
-                color = Color.Black,
+                color = Black,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -304,7 +303,7 @@ fun ProfilePictureSelector(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = Authentication,
+                        color = AppPink,
                         modifier = Modifier.size(40.dp)
                     )
                 }
@@ -352,7 +351,7 @@ fun ProfilePictureSelector(
                         .offset(x = 30.dp, y = 30.dp)
                         .zIndex(1f)
                         .clip(CircleShape)
-                        .background(Authentication),
+                        .background(AppPink),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
