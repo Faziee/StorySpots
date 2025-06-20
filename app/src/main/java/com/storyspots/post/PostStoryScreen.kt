@@ -70,14 +70,15 @@ fun PostStoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(White)
-            .imePadding()
-            .verticalScroll(rememberScrollState())
     ) {
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(24.dp),
+
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -88,8 +89,10 @@ fun PostStoryScreen(
                     fontWeight = FontWeight.Bold,
                     color = DarkText
                 ),
-                modifier = Modifier.padding(bottom = 3.dp)
+                //modifier = Modifier.padding(bottom = 3.dp)
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Box(
                 modifier = Modifier
@@ -126,6 +129,8 @@ fun PostStoryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -143,6 +148,8 @@ fun PostStoryScreen(
                 enabled = postState !is PostStoryHandler.PostState.UploadingImage &&
                         postState !is PostStoryHandler.PostState.SavingToFirestore
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = description,
@@ -214,6 +221,8 @@ fun PostStoryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
             Button(
                 onClick = {
                     val currentLocation = getLocation()
@@ -258,8 +267,6 @@ fun PostStoryScreen(
                 }
                 Text(buttonText)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
