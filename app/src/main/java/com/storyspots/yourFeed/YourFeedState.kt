@@ -1,10 +1,7 @@
 package com.storyspots.yourFeed
 
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.model.StoryData
 
-/**
- * Represents the different states of the Your Feed screen
- */
 sealed class YourFeedUiState {
     object Loading : YourFeedUiState()
     data class Success(val stories: List<StoryData>) : YourFeedUiState()
@@ -12,9 +9,6 @@ sealed class YourFeedUiState {
     object Empty : YourFeedUiState()
 }
 
-/**
- * Represents the state of delete operations
- */
 sealed class DeleteState {
     object Idle : DeleteState()
     data class Deleting(val storyId: String) : DeleteState()

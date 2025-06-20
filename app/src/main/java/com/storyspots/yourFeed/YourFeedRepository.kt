@@ -3,8 +3,8 @@ package com.storyspots.yourFeed
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.storyspots.caption.StoryData
-import com.storyspots.caption.toStoryData
+import com.storyspots.caption.model.StoryData
+import com.storyspots.caption.model.toStoryData
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

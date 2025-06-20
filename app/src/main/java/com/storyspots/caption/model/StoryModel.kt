@@ -1,4 +1,4 @@
-package com.storyspots.caption
+package com.storyspots.caption.model
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference

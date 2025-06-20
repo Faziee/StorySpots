@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.storyspots.R
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.model.StoryData
 import com.storyspots.yourFeed.YourFeedViewModel.Companion.formatFirebaseTimestamp
 
 @Composable

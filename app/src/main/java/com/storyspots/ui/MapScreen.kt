@@ -15,9 +15,9 @@ import com.mapbox.maps.Style
 import androidx.compose.ui.geometry.Offset
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.storyspots.caption.StoryStack
-import com.storyspots.caption.StoryData
-import com.storyspots.caption.toStoryData
+import com.storyspots.caption.ui.StoryStack
+import com.storyspots.caption.model.StoryData
+import com.storyspots.caption.model.toStoryData
 import com.storyspots.core.AppComponents
 import com.storyspots.core.managers.LocationsManager
 import com.storyspots.pin.ClusterZoomHandler

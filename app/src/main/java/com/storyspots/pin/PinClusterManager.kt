@@ -18,7 +18,7 @@ import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.plugin.gestures.addOnMapClickListener
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.model.StoryData
 
 class SimpleClustering {
 

@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.model.StoryData
 import com.storyspots.core.AppComponents
 import com.storyspots.notification.NotificationCleanupService
 import kotlinx.coroutines.flow.MutableStateFlow

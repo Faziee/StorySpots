@@ -1,5 +1,4 @@
-// file: ui/components/StoryStackScreen.kt
-package com.storyspots.caption
+package com.storyspots.caption.ui
 
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
@@ -8,12 +7,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.storyspots.caption.model.StoryData
 
 @Composable
 fun StoryStack(
@@ -56,7 +57,7 @@ fun StoryStackForPin(
     stories: List<StoryData>,
     screenOffset: Offset,
     onDismiss: () -> Unit = {},
-    onPositioned: (androidx.compose.ui.layout.LayoutCoordinates) -> Unit = {}
+    onPositioned: (LayoutCoordinates) -> Unit = {}
 ) {
     var currentIndex by remember { mutableStateOf(0) }
     var showFullscreenOverlay by remember { mutableStateOf(false) }

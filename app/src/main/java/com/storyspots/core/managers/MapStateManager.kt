@@ -3,7 +3,7 @@ package com.storyspots.core.managers
 import android.util.Log
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.model.StoryData
 import com.storyspots.core.AppComponents
 import com.storyspots.pin.ClusterZoomHandler
 import com.storyspots.pin.SimpleClustering

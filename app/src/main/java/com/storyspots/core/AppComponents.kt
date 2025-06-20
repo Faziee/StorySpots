@@ -2,10 +2,10 @@ package com.storyspots.core
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
-import com.storyspots.cache.StoryCache
+import com.storyspots.cache.StoryListCache
 import com.storyspots.core.managers.*
 import com.storyspots.services.cloudinary.CloudinaryService
-import com.storyspots.caption.toStoryData
+import com.storyspots.caption.model.toStoryData
 import kotlinx.coroutines.*
 import kotlin.getValue
 
@@ -41,8 +41,8 @@ object AppComponents {
 
     val mapStateManager = MapStateManager
 
-    val storyCache: StoryCache by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        StoryCache(StorySpot.instance)
+    val storyCache: StoryListCache by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        StoryListCache(StorySpot.instance)
     }
 
     val cloudinaryService: CloudinaryService by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {

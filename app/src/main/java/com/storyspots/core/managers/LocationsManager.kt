@@ -104,7 +104,7 @@ class LocationsManager(private val context: Context) {
         }
     }
 
-    private fun initializeCameraPosition(mapView: MapView) {
+    fun initializeCameraPosition(mapView: MapView) {
         _currentLocation.value?.let { lastLocation ->
             mapView.mapboxMap.setCamera(
                 CameraOptions.Builder()

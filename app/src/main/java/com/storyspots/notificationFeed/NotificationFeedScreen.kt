@@ -40,8 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.firestore.DocumentReference
-import com.storyspots.caption.FullscreenStoryOverlay
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.ui.FullscreenStoryOverlay
+import com.storyspots.caption.model.StoryData
 import com.storyspots.model.NotificationWithUser
 import com.storyspots.notificationFeed.NotificationSection
 import com.storyspots.notificationFeed.NotificationsViewModel

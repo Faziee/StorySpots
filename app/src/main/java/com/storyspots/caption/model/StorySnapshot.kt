@@ -1,13 +1,9 @@
-package com.storyspots.caption
+package com.storyspots.caption.model
 
 import android.util.Log
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.GeoPoint
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 
 fun DocumentSnapshot.toStoryData(): StoryData? {
     return try {

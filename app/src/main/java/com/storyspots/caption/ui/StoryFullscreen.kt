@@ -1,12 +1,11 @@
-package com.storyspots.caption
+package com.storyspots.caption.ui
 
-import android.util.Log
 import com.storyspots.ui.theme.DarkText
 import com.storyspots.ui.theme.LightText
 import com.storyspots.ui.theme.White
 import com.storyspots.ui.theme.Black
 import com.storyspots.ui.theme.MediumText
-import com.storyspots.caption.StoryData
+import com.storyspots.caption.StoryUtils
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,74 +31,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.DocumentReference
 import com.storyspots.R
-import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.TimeUnit
-
-// User data class
-data class UserData(
-    val id: String = "",
-    val username: String = "Unknown User",
-    val profileImageUrl: String = ""
-)
-
-// Function to fetch user data by DocumentReference
-suspend fun fetchUserData(userRef: DocumentReference): UserData? {
-    return try {
-        val userDoc = FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(userRef.id)
-            .get()
-            .await()
-        Log.d("UserData", "Fetched user data: $userDoc")
-
-        UserData(
-            id = userDoc.id,
-            username = userDoc.getString("username") ?: "Deleted User",
-            profileImageUrl = userDoc.getString("profile_picture_url")
-                ?: userDoc.getString("profileImageUrl")
-                ?: userDoc.getString("profile_picture")
-                ?: ""
-        )
-    } catch (e: Exception) {
-        android.util.Log.e("UserData", "Error fetching user data", e)
-        null
-    }
-}
-
-fun formatRelativeTime(timestamp: com.google.firebase.Timestamp): String {
-    val now = Date()
-    val date = timestamp.toDate()
-    val diffInMillis = now.time - date.time
-
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(diffInMillis)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(diffInMillis)
-    val hours = TimeUnit.MILLISECONDS.toHours(diffInMillis)
-    val days = TimeUnit.MILLISECONDS.toDays(diffInMillis)
-
-    return when {
-        seconds < 60 -> "Just now"
-        minutes < 60 -> "$minutes minute${if (minutes != 1L) "s" else ""} ago"
-        hours < 24 -> "$hours hour${if (hours != 1L) "s" else ""} ago"
-        days == 1L -> "Yesterday"
-        days in 2..6 -> "$days days ago"
-        days in 7..13 -> "Last week"
-        else -> {
-            val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-            sdf.format(date)
-        }
-    }
-}
+import com.storyspots.caption.model.StoryData
+import com.storyspots.caption.StoryRepository
+import com.storyspots.caption.model.UserData
 
 @Composable
 fun FullscreenStoryOverlay(
     stories: List<StoryData>,
-    onClose: () -> Unit
+    onClose: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -168,7 +108,7 @@ fun FullscreenStoryCard(
 
     LaunchedEffect(story.authorRef) {
         if (story.authorRef != null) {
-            userData = fetchUserData(story.authorRef)
+            userData = StoryRepository().fetchUserData(story.authorRef)
         }
         isLoadingUser = false
     }
@@ -217,21 +157,7 @@ fun FullscreenStoryCard(
                                 .clip(RoundedCornerShape(16.dp))
                         )
                     } else {
-                        // Default profile picture with first letter of username
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(LightText),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = userData?.username?.firstOrNull()?.toString()?.uppercase() ?: "U",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = White
-                            )
-                        }
+                        DisplayPlaceholderUserImage(userData)
                     }
                 }
 
@@ -246,7 +172,7 @@ fun FullscreenStoryCard(
                     )
                     story.createdAt?.let { timestamp ->
                         Text(
-                            text = formatRelativeTime(timestamp),
+                            text = StoryUtils().formatRelativeTime(timestamp),
                             fontSize = 12.sp,
                             color = LightText
                         )
@@ -256,7 +182,9 @@ fun FullscreenStoryCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            FullscreenStoryImage(story, onLongPress = onLongPress)
+            if (story.imageUrl != "") {
+                FullscreenStoryImage(story, onLongPress = onLongPress)
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -265,6 +193,42 @@ fun FullscreenStoryCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             FullscreenCaption(story)
+        }
+    }
+}
+
+@Composable
+fun DisplayPlaceholderUserImage(userData: UserData?) {
+    if (userData?.username == "Deleted User")
+    {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(R.drawable.placeholder_deleted_user),
+                contentDescription = "Profile picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+    }
+    else {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(LightText),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = userData?.username?.firstOrNull()?.toString()?.uppercase() ?: "U",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = White
+            )
         }
     }
 }
