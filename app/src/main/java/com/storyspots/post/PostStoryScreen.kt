@@ -70,14 +70,15 @@ fun PostStoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(White)
-            .imePadding()
-            .verticalScroll(rememberScrollState())
     ) {
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(24.dp),
+
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -88,14 +89,16 @@ fun PostStoryScreen(
                     fontWeight = FontWeight.Bold,
                     color = DarkText
                 ),
-                modifier = Modifier.padding(bottom = 3.dp)
+                //modifier = Modifier.padding(bottom = 3.dp)
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Box(
                 modifier = Modifier
                     .shadow(4.dp, RoundedCornerShape(8.dp), clip = true)
                     .background(White, shape = RoundedCornerShape(8.dp))
-                    .border(1.dp, Authentication, RoundedCornerShape(8.dp))
+                    .border(1.dp, AppPink, RoundedCornerShape(8.dp))
                     .fillMaxWidth()
                     .height(200.dp)
             ) {
@@ -126,6 +129,8 @@ fun PostStoryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -133,16 +138,18 @@ fun PostStoryScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 ),
                 shape = RoundedCornerShape(8.dp),
                 singleLine = true,
                 enabled = postState !is PostStoryHandler.PostState.UploadingImage &&
                         postState !is PostStoryHandler.PostState.SavingToFirestore
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = description,
@@ -155,10 +162,10 @@ fun PostStoryScreen(
                         postState !is PostStoryHandler.PostState.SavingToFirestore,
                 modifier = Modifier.fillMaxSize().heightIn(min = 120.dp, max = 200.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 )
             )
 
@@ -166,7 +173,7 @@ fun PostStoryScreen(
                 is PostStoryHandler.PostState.UploadingImage -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Uploading image...",
@@ -180,7 +187,7 @@ fun PostStoryScreen(
                     LinearProgressIndicator(
                         progress = progress,
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Uploading image: ${(progress * 100).toInt()}%",
@@ -192,7 +199,7 @@ fun PostStoryScreen(
                 is PostStoryHandler.PostState.SavingToFirestore -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Authentication
+                        color = AppPink
                     )
                     Text(
                         text = "Saving your story...",
@@ -214,6 +221,8 @@ fun PostStoryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
             Button(
                 onClick = {
                     val currentLocation = getLocation()
@@ -228,7 +237,7 @@ fun PostStoryScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isPostEnabled) Authentication else LightGray,
+                    containerColor = if (isPostEnabled) AppPink else LightGray,
                     contentColor = if (isPostEnabled) White else LightGray
                 ),
                 enabled = isPostEnabled
@@ -258,8 +267,6 @@ fun PostStoryScreen(
                 }
                 Text(buttonText)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
