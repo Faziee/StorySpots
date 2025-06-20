@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -49,6 +48,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(White)
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -92,10 +92,10 @@ fun LoginScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 ),
                 singleLine = true
             )
@@ -121,10 +121,10 @@ fun LoginScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Authentication,
+                    focusedBorderColor = AppPink,
                     unfocusedBorderColor = HintGray,
-                    focusedLabelColor = Authentication,
-                    cursorColor = Authentication
+                    focusedLabelColor = AppPink,
+                    cursorColor = AppPink
                 ),
                 singleLine = true
             )
@@ -140,12 +140,12 @@ fun LoginScreen(
                     .height(50.dp)
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Authentication),
+                colors = ButtonDefaults.buttonColors(containerColor = AppPink),
                 enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = White,
                         modifier = Modifier.size(20.dp)
                     )
                 } else {
@@ -161,7 +161,7 @@ fun LoginScreen(
 
             Text(
                 text = "Don't have an account? Register here",
-                color = Color.Black,
+                color = Black,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier

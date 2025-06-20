@@ -20,7 +20,7 @@ val White = Color.White
 val Black = Color.Black
 val Background = Color(0xFFF8F8F8)
 
-val Authentication = Color(0xFFFF9CC7)
+val AppPink = Color(0xFFFF9CC7)
 val HintGray = Color(0xFF575764)
 val LightGray = Color(0xA4C8CCCC)
 val ErrorColour = Color(0xFFa50001)
