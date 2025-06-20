@@ -32,6 +32,7 @@ render.experimental.xml
 
 # Google Services (e.g. APIs or Firebase)
 google-services.json
+firebase_service_account_key.json
 
 # Android Profiling
 *.hprof
@@ -127,3 +128,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,android,kotlin
+app/src/main/java/com/storyspots/utils/Constants.kt
