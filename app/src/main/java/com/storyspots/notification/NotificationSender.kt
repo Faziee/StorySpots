@@ -1,6 +1,9 @@
 package com.storyspots.notification
 
+import android.content.Context
 import android.util.Log
+import android.Manifest
+import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
@@ -15,8 +18,18 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import com.storyspots.MainActivity
+import com.storyspots.R
 
-class NotificationSender {
+class NotificationSender (private val context: Context){
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val client = OkHttpClient()
@@ -126,5 +139,124 @@ class NotificationSender {
         } catch (e: Exception) {
             Log.e("NotificationSender", "Failed to send OneSignal push", e)
         }
+    }
+
+    suspend fun sendProximityNotification(
+        postTitle: String,
+        postId: String,
+        authorName: String,
+        distance: Int, // distance in meters
+        authorProfileImageUrl: String? = null
+    ) {
+        val currentUserId = auth.uid ?: return
+        Log.d("NotificationSender", "Sending proximity notification for postId=$postId, distance=${distance}m")
+
+        try {
+            // 1. Save notification to Firestore (for in-app notification feed)
+            saveProximityNotificationToFirestore(postTitle, postId, authorName, currentUserId, distance, authorProfileImageUrl)
+
+            // 2. Send local notification (no OneSignal needed for proximity)
+            sendLocalProximityNotification(postTitle, authorName, distance, postId)
+
+        } catch (e: Exception) {
+            Log.e("NotificationSender", "Failed to send proximity notification for post $postId", e)
+        }
+    }
+
+    private suspend fun saveProximityNotificationToFirestore(
+        postTitle: String,
+        postId: String,
+        authorName: String,
+        currentUserId: String,
+        distance: Int,
+        authorProfileImageUrl: String?
+    ) {
+        val storyRef = db.collection("story").document(postId)
+
+        val notification = NotificationItem(
+            id = "${postId}_proximity_${System.currentTimeMillis()}", // Unique ID for proximity notifications
+            title = "Story nearby!",
+            message = "\"$postTitle\" by $authorName is ${distance}m away",
+            created_at = Timestamp.now(),
+            authorId = currentUserId,
+            story = storyRef,
+            imageUrl = authorProfileImageUrl
+        )
+
+        db.collection("notification")
+            .document(notification.id)
+            .set(notification.toMap())
+            .await()
+
+        Log.d("NotificationSender", "Proximity notification saved to Firestore for post $postId")
+    }
+
+    private fun sendLocalProximityNotification(
+        postTitle: String,
+        authorName: String,
+        distance: Int,
+        postId: String
+    ) {
+        // 🔐 Check for notification permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.w("NotificationSender", "Notification permission not granted")
+                return
+            }
+        }
+
+        val notificationManager = NotificationManagerCompat.from(context)
+
+        createNotificationChannel()
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("story_id", postId)
+            putExtra("notification_type", "proximity")
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            postId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.pin_marker)
+            .setContentTitle("Story nearby! 📍")
+            .setContentText("\"$postTitle\" by $authorName is ${distance}m away")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("\"$postTitle\" by $authorName is ${distance}m away. Tap to explore!")
+            )
+            .build()
+
+        notificationManager.notify(postId.hashCode(), notification)
+        Log.d("NotificationSender", "Local proximity notification sent for post $postId")
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Story Proximity",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when you're near a story"
+            }
+
+            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "story_proximity_channel"
     }
 }
