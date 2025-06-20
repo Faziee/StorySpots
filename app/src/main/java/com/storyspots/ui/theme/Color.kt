@@ -26,3 +26,5 @@ val LightGray = Color(0xA4C8CCCC)
 val ErrorColour = Color(0xFFa50001)
 val SuccessColour = Color(0xFF4CBB17)
 val NeonGreen = Color(0xFF8FFF53)
+val Grey = Color(0xFF666666)
+val Red = Color.Red

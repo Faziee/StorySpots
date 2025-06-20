@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -21,6 +22,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.storyspots.R
 import com.storyspots.caption.model.StoryData
+import com.storyspots.ui.theme.Grey
+import com.storyspots.ui.theme.NeonGreen
+import com.storyspots.ui.theme.Red
+import com.storyspots.ui.theme.White
 import com.storyspots.yourFeed.YourFeedViewModel.Companion.formatFirebaseTimestamp
 
 @Composable
@@ -35,7 +40,7 @@ fun StoryCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box {
@@ -47,7 +52,7 @@ fun StoryCard(
                     text = story.title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333)
+                    color = Grey
                 )
 
                 // Caption
@@ -56,7 +61,7 @@ fun StoryCard(
                     Text(
                         text = caption,
                         fontSize = 16.sp,
-                        color = Color(0xFF666666),
+                        color = Grey,
                         lineHeight = 22.sp
                     )
                 }
@@ -107,7 +112,7 @@ fun StoryCard(
                     Text(
                         text = "📍 ${String.format("%.4f", geoPoint.latitude)}, ${String.format("%.4f", geoPoint.longitude)}",
                         fontSize = 12.sp,
-                        color = Color(0xFF666666)
+                        color = Grey
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
@@ -117,7 +122,7 @@ fun StoryCard(
                     Text(
                         text = formatFirebaseTimestamp(timestamp),
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = Gray
                     )
                 }
             }
@@ -134,14 +139,14 @@ fun StoryCard(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = Color.Red
+                        color = Red
                     )
                 } else {
                     IconButton(onClick = onDeleteClick) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete story",
-                            tint = Color(0xFF666666),
+                            tint = NeonGreen,
                             modifier = Modifier.size(20.dp)
                         )
                     }
