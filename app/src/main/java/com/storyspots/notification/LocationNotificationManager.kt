@@ -33,7 +33,7 @@ class LocationNotificationManager(private val context: Context) {
     private val auth = FirebaseAuth.getInstance()
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     private val geofencingClient = LocationServices.getGeofencingClient(context)
-    private val notificationSender = NotificationSender()
+    private val notificationSender = NotificationSender(context)
 
     private val oneSignalAppId = Constants.ONESIGNAL_APP_ID
     private val oneSignalRestApiKey = Constants.ONESIGNAL_REST_API_KEY
